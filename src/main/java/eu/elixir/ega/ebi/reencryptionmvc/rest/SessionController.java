@@ -21,13 +21,12 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- *
  * @author asenf
  */
 @RestController
@@ -36,7 +35,7 @@ public class SessionController {
 
     @Autowired
     private SessionService sessionService;
-    
+
     @RequestMapping(value = "/{session_id}", method = GET)
     @ResponseBody
     public Transfer get(@PathVariable String session_id) {
@@ -45,5 +44,6 @@ public class SessionController {
             throw new NotFoundException("No Session with UUID", session_id);
         }
         return session;
-    }    
+    }
+
 }

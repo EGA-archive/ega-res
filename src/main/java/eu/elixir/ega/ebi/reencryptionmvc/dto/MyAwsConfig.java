@@ -20,7 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor

@@ -21,10 +21,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.io.CountingInputStream;
 import com.google.gson.Gson;
-import eu.elixir.ega.ebi.egacipher.EgaRemoteSeekableCipherStream;
-import eu.elixir.ega.ebi.egacipher.EgaSeekableCipherStream;
-import eu.elixir.ega.ebi.egacipher.Glue;
-import eu.elixir.ega.ebi.egacipher.experimental.EgaAsyncBufferedSeekableHTTPStream;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
@@ -33,28 +29,10 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.internal.CacheResServiceImpl;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
+import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
+import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
+import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
+import htsjdk.samtools.seekablestream.ebi.AsyncBufferedSeekableHTTPStream;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -63,28 +41,46 @@ import org.cache2k.Cache;
 import org.cache2k.Cache2kBuilder;
 import org.springframework.beans.factory.FactoryBean;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
- *
  * @author asenf
  */
-public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>> { //extends SimpleJdbcDaoSupport
+public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage>> { //extends SimpleJdbcDaoSupport
     private final int pageSize;
     private final Cache<String, EgaAESFileHeader> myHeaderCache;
-    
+
     private final HttpClient httpclient;
 
     private final String awsAccessKeyId;
     private final String awsSecretAccessKey;
-    
+
     private final String fireUrl;
     private final String fireArchive;
     private final String fireKey;
-    
+
     private final String eurekaUrl;
-    
+
     private final ArrayList<String> downloaderUrls;
     private final ArrayList<String> keyUrls;
-    
+
     My2KCachePageFactory(int pageSize,
                          String awsAccessKeyId,
                          String awsSecretAccessKey,
@@ -92,7 +88,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                          String fireArchive,
                          String fireKey,
                          String eurekaUrl) throws Exception {
-        
+
         this.pageSize = pageSize;
         this.myHeaderCache = (new My2KCacheFactory()).getObject(); //myCache;
 
@@ -100,13 +96,13 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
 
         this.awsAccessKeyId = awsAccessKeyId;
         this.awsSecretAccessKey = awsSecretAccessKey;
-        
+
         this.fireUrl = fireUrl;
         this.fireArchive = fireArchive;
         this.fireKey = fireKey;
-        
+
         this.eurekaUrl = eurekaUrl;
-        
+
         // **
         // ** Some work
         // **
@@ -116,45 +112,46 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
         // Manually Obtain URL for DOWNLOADER
         HttpGet request = new HttpGet(eurekaUrl + "apps/DOWNLOADER");
         HttpResponse response = this.httpclient.execute(request);
-        BufferedReader reader = new BufferedReader(new InputStreamReader( response.getEntity().getContent() ));
-        String str;        
+        BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+        String str;
         while ((str = reader.readLine()) != null) {
             if (str.trim().startsWith("<homePageUrl>")) {
                 str = str.substring(17); // including leading space
-                str = str.substring(0, str.indexOf("<")-1);
+                str = str.substring(0, str.indexOf("<") - 1);
                 downloaderUrls.add(str);
             }
         }
         reader.close();
-        
+
         // Manually Obtain URL for KEY
         request = new HttpGet(eurekaUrl + "apps/KEYSERVICE");
         response = this.httpclient.execute(request);
-        reader = new BufferedReader(new InputStreamReader( response.getEntity().getContent() ));
+        reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
         while ((str = reader.readLine()) != null) {
             if (str.trim().startsWith("<homePageUrl>")) {
                 str = str.substring(17); // including leading space
-                str = str.substring(0, str.indexOf("<")-1);
+                str = str.substring(0, str.indexOf("<") - 1);
                 keyUrls.add(str);
             }
         }
-        
+
     }
-    
+
     @Override
-    public Cache<String,CachePage> getObject() throws Exception {
-        return new Cache2kBuilder<String, CachePage>() {}
-                        .expireAfterWrite(10, TimeUnit.MINUTES)    // expire/refresh after 5 minutes
-                        .resilienceDuration(45, TimeUnit.SECONDS) // cope with at most 30 seconds
-                                                                  // outage before propagating 
-                                                                  // exceptions
-                        .refreshAhead(false)                      // keep fresh when expiring
-                        .loader(this::loadPage)                   // auto populating function
-                        .keepDataAfterExpired(false)
-                        .loaderExecutor(Executors.newFixedThreadPool(128))
-                        .loaderThreadCount(64)
-                        .entryCapacity(800)
-                        .build();
+    public Cache<String, CachePage> getObject() throws Exception {
+        return new Cache2kBuilder<String, CachePage>() {
+        }
+                .expireAfterWrite(10, TimeUnit.MINUTES)    // expire/refresh after 5 minutes
+                .resilienceDuration(45, TimeUnit.SECONDS) // cope with at most 30 seconds
+                // outage before propagating
+                // exceptions
+                .refreshAhead(false)                      // keep fresh when expiring
+                .loader(this::loadPage)                   // auto populating function
+                .keepDataAfterExpired(false)
+                .loaderExecutor(Executors.newFixedThreadPool(128))
+                .loaderThreadCount(64)
+                .entryCapacity(800)
+                .build();
     }
 
     @Override
@@ -166,7 +163,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
     public boolean isSingleton() {
         return true;
     }
-    
+
     /*
      * Cache Page Loader
      * Derive Path and Coordinates from Key
@@ -174,65 +171,65 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
     private CachePage loadPage(String key) {
         HttpClient localHttpclient = HttpClientBuilder.create().build();
         String[] keys = key.split("\\_");
-        
+
         String id = keys[0];
         int cachePage = Integer.parseInt(keys[1]);
-        
+
         String httpAuth = "";
         String sourceKey = "";
         if (!myHeaderCache.containsKey(id)) { // Get Header (once in 24h)
             ArchiveSource source = null;
-            
+
             Random r = new Random();
             int idx = r.nextInt(downloaderUrls.size());
             String get = downloaderUrls.get(idx);
             HttpGet sourceRequest = new HttpGet(
-                    get + 
-                    "/file/" + id);
+                    get +
+                            "/file/" + id);
             idx = r.nextInt(keyUrls.size());
             String getKey = keyUrls.get(idx);
             HttpGet keyRequest = new HttpGet(
-                    getKey + 
-                    "/keys/filekeys/" + id);
-            
+                    getKey +
+                            "/keys/filekeys/" + id);
+
             EgaFile[] files = null;
             String encryptionKey = "";
             try {
                 // EgaFile
                 HttpResponse sourceResponse = localHttpclient.execute(sourceRequest);
-                if (sourceResponse.getEntity()==null)
+                if (sourceResponse.getEntity() == null)
                     throw new ServerErrorException("Error Attempting to Load Cache Header File data ", key);
-                BufferedReader reader = new BufferedReader(new InputStreamReader( sourceResponse.getEntity().getContent() ));
-                Gson gson = new Gson();                
+                BufferedReader reader = new BufferedReader(new InputStreamReader(sourceResponse.getEntity().getContent()));
+                Gson gson = new Gson();
                 files = gson.fromJson(reader, EgaFile[].class);
                 reader.close();
-                if (files==null || files.length==0)
+                if (files == null || files.length == 0)
                     throw new ServerErrorException("Error Loading Cache Header File data", key);
 
                 // encryptionKey
                 HttpResponse keyResponse = localHttpclient.execute(keyRequest);
-                if (keyResponse.getEntity()==null)
+                if (keyResponse.getEntity() == null)
                     throw new ServerErrorException("Error Attempting to Load Cache Header key ", key);
-                reader = new BufferedReader(new InputStreamReader( keyResponse.getEntity().getContent() ));
+                reader = new BufferedReader(new InputStreamReader(keyResponse.getEntity().getContent()));
                 encryptionKey = reader.readLine().trim();
                 reader.close();
-                if (encryptionKey==null || encryptionKey.length()==0)
+                if (encryptionKey == null || encryptionKey.length() == 0)
                     throw new ServerErrorException("Error Loading Cache Header File key", key);
-                
+
             } catch (Exception ex) {
                 throw new ServerErrorException("Error Loading Cache Header", key);
             }
-            
+
             source = new ArchiveSource(files[0].getFileName(), files[0].getFileSize(), "", "aes256", encryptionKey);
             sourceKey = source.getEncryptionKey();
-            
+
             String fileLocation = source.getFileUrl();
             httpAuth = source.getAuth();
             long fileSize = source.getSize();
-            
+
             // Obtain Signed S3 URL, place in Header Cache
             loadHeaderCleversafe(id, fileLocation, httpAuth, fileSize, sourceKey);
-            System.out.println(" --- " + id +" size: " + fileSize + " time to load: " + 0); //dt);
+            System.out.println(" --- " + id + " size: " + fileSize + " time to load: " + 0); //dt);
         } // Get Header - Complete
 
         // **
@@ -240,41 +237,41 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
         // **
         EgaAESFileHeader header = myHeaderCache.get(id);
         sourceKey = header.getSourceKey();
-        
-        long startCoordinate = (long)cachePage * pageSize; // Account for IV at start of File
-        long endCoordinate = (long)startCoordinate + pageSize;
+
+        long startCoordinate = (long) cachePage * pageSize; // Account for IV at start of File
+        long endCoordinate = (long) startCoordinate + pageSize;
         long fileSize = header.getSize();
-        endCoordinate = endCoordinate>fileSize?fileSize:endCoordinate; // End of file
-        int bufSize = (int) (endCoordinate-startCoordinate);
-        
+        endCoordinate = endCoordinate > fileSize ? fileSize : endCoordinate; // End of file
+        int bufSize = (int) (endCoordinate - startCoordinate);
+
         // Prepare Request (containd query parameters
         String url = header.getUrl();
         HttpGet request = new HttpGet(url);
 
         // Add request header for Basic Auth (for CleverSafe)
-        if (httpAuth!=null && httpAuth.length() > 0)
+        if (httpAuth != null && httpAuth.length() > 0)
             request.addHeader("Authorization", httpAuth);
 
         // Add range header - logical (unencrypted) coordinates to file coordinates (add IV handling '+16')
-        if ( (startCoordinate+16) >= header.getSize() )
+        if ((startCoordinate + 16) >= header.getSize())
             return new CachePage(new byte[]{});
         //String byteRange = "bytes=" + (startCoordinate+16) + "-" + ((endCoordinate+16)>header.getSize()?header.getSize():(endCoordinate+16));
-        String byteRange = "bytes=" + (startCoordinate+16) + "-" + (endCoordinate+16);
+        String byteRange = "bytes=" + (startCoordinate + 16) + "-" + (endCoordinate + 16);
         request.addHeader("Range", byteRange);
-        long pageSize_ = ((endCoordinate+16)>header.getSize()?header.getSize():(endCoordinate+16)) - (startCoordinate+16);
-        pageSize_ = pageSize>pageSize_?pageSize_:pageSize;
+        long pageSize_ = ((endCoordinate + 16) > header.getSize() ? header.getSize() : (endCoordinate + 16)) - (startCoordinate + 16);
+        pageSize_ = pageSize > pageSize_ ? pageSize_ : pageSize;
 
-        byte[] buffer = new byte[(int)pageSize_];
-        byte[] decrypted = new byte[(int)pageSize_];
+        byte[] buffer = new byte[(int) pageSize_];
+        byte[] decrypted = new byte[(int) pageSize_];
         long bytesRead = 0;
         try {
             // Run the request
             HttpResponse response = localHttpclient.execute(request);
-            if (response.getStatusLine().getStatusCode()!=200 && response.getStatusLine().getStatusCode()!=206)
+            if (response.getStatusLine().getStatusCode() != 200 && response.getStatusLine().getStatusCode() != 206)
                 throw new ServerErrorException("Error Loading Cache Page Code " + response.getStatusLine().getStatusCode() + " for ", key);
 
             // Read response from HTTP call, count bytes read (encrypted Data)
-            CountingInputStream cIn = new CountingInputStream(response.getEntity().getContent());            
+            CountingInputStream cIn = new CountingInputStream(response.getEntity().getContent());
             DataInputStream dis = new DataInputStream(cIn);
             dis.readFully(buffer);
             bytesRead = (int) cIn.getCount(); // Cache Page will be in Integer range
@@ -282,8 +279,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
             // Decrypt, store plain in cache
             byte[] newIV = new byte[16]; // IV always 16 bytes long
             System.arraycopy(header.getIV(), 0, newIV, 0, 16); // preserved start value
-            if (startCoordinate>0) byte_increment_fast(newIV, startCoordinate);
-            decrypted = decrypt(buffer, sourceKey, newIV);            
+            if (startCoordinate > 0) byte_increment_fast(newIV, startCoordinate);
+            decrypted = decrypt(buffer, sourceKey, newIV);
         } catch (UnsupportedOperationException th) {
             System.out.println("HTTP GET ERROR -1 " + th.toString() + "   -- " + byteRange + "\n" + url);
             throw new ServerErrorException("Error Loading Cache Page -1 " + th.toString() + " for ", key);
@@ -302,24 +299,24 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
         } finally {
             request.releaseConnection();
         }
-        
-        return new CachePage(decrypted);        
+
+        return new CachePage(decrypted);
     }
 
     private void loadHeaderCleversafe(String id, String path, String httpAuth, long fileSize, String sourceKey) {
         boolean close = false;
-        String path_ = path.toLowerCase().startsWith("/fire/a/")?path.substring(16):path;
+        String path_ = path.toLowerCase().startsWith("/fire/a/") ? path.substring(16) : path;
         String[] url__ = getPath(path_);
         String url = url__[0];
 
         // Load first 16 bytes; set stats
         HttpClient httpclient = HttpClientBuilder.create().build();
         HttpGet request = new HttpGet(url);
-        
-        if (httpAuth!=null && httpAuth.length()>0) { // Old: http Auth 
+
+        if (httpAuth != null && httpAuth.length() > 0) { // Old: http Auth
             close = true;
-            String encoding = new sun.misc.BASE64Encoder().encode (httpAuth.getBytes());
-            encoding = encoding.replaceAll("\n", "");  
+            String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
+            encoding = encoding.replaceAll("\n", "");
             String auth = "Basic " + encoding;
             request.addHeader("Authorization", auth);
         } else if (!url.contains("X-Amz")) {        // Not an S3 URL - Basic Auth embedded with URL
@@ -327,32 +324,33 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
             try {
                 URL url_ = new URL(url);
                 if (url_.getUserInfo() != null) {
-                    String encoding = new sun.misc.BASE64Encoder().encode (url_.getUserInfo().getBytes());
-                    encoding = encoding.replaceAll("\n", "");  
+                    String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
+                    encoding = encoding.replaceAll("\n", "");
                     String auth = "Basic " + encoding;
                     request.addHeader("Authorization", auth);
                 }
-            } catch (MalformedURLException ex) {}
+            } catch (MalformedURLException ex) {
+            }
         }                                           // S3 URL: Use as it is given!
-        
+
         byte[] IV = new byte[16];
         try {
             HttpResponse response = httpclient.execute(request);
             DataInputStream content = new DataInputStream(response.getEntity().getContent());
             content.readFully(IV);
             //if (close) content.close();
-            
+
             EgaAESFileHeader header = new EgaAESFileHeader(IV, "aes256", fileSize, url, sourceKey);
             myHeaderCache.put(id, header);
         } catch (IOException ex) {
             Logger.getLogger(CacheResServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /*
      * Decryption Function
      */
-    private byte[] decrypt(byte[] cipherText, String encryptionKey, byte[] IV) throws Exception{
+    private byte[] decrypt(byte[] cipherText, String encryptionKey, byte[] IV) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
         SecretKey key_ = Glue.getInstance().getKey(encryptionKey.toCharArray(), 256);
         cipher.init(Cipher.DECRYPT_MODE, key_, new IvParameterSpec(IV));
@@ -362,14 +360,14 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
     /*
      * Archive Related Helper Functions -- AES
      */
-    
+
     // Return Unencrypted Seekable Stream from Source
 //    @HystrixCommand
-    private SeekableStream getSource(String sourceFormat, 
-                                String sourceKey, 
-                                String fileLocation,
-                                String httpAuth,
-                                long fileSize) {
+    private SeekableStream getSource(String sourceFormat,
+                                     String sourceKey,
+                                     String fileLocation,
+                                     String httpAuth,
+                                     long fileSize) {
 
         SeekableStream fileIn = null; // Source of File
         SeekableStream plainIn = null; // Return Stream - a Decrypted File
@@ -380,8 +378,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                 //fileIn = httpAuth==null?new SeekableHTTPStream(url):
                 //                        new EgaSeekableHTTPStream(url, null, httpAuth, fileSize);
                 /** start cache code **/
-                fileIn = httpAuth==null?new EgaAsyncBufferedSeekableHTTPStream(url):
-                                        new EgaAsyncBufferedSeekableHTTPStream(url, null, httpAuth, fileSize);
+                fileIn = httpAuth == null ? new AsyncBufferedSeekableHTTPStream(url) :
+                        new AsyncBufferedSeekableHTTPStream(url, null, httpAuth, fileSize);
                 /** end cache code **/
             } else if (fileLocation.toLowerCase().startsWith("s3")) { // S3
                 String awsPath = fileLocation.substring(23); // Strip "S3://"
@@ -397,19 +395,19 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                 Path filePath = Paths.get(new URI(fileLocation));
                 fileIn = new SeekablePathStream(filePath);
             }
-            
+
             // Obtain Plain Input Stream
             if (sourceFormat.equalsIgnoreCase("plain")) {
                 plainIn = fileIn; // No Decryption Necessary
             } else if (sourceFormat.equalsIgnoreCase("aes128")) {
-                plainIn = new EgaSeekableCipherStream(fileIn, sourceKey.toCharArray(), pageSize, 128);
+                plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), pageSize, 128);
             } else if (sourceFormat.equalsIgnoreCase("aes256")) {
-                //plainIn = new EgaSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
-                plainIn = new EgaRemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), pageSize, 256);
-            //} else if (sourceFormat.equalsIgnoreCase("symmetricgpg")) {
-            //    plainIn = getSymmetricGPGDecryptingInputStream(fileIn, sourceKey);
-            //} else if (sourceFormat.toLowerCase().startsWith("publicgpg")) {
-            //    plainIn = getAsymmetricGPGDecryptingInputStream(fileIn, sourceKey, sourceFormat);
+                //plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
+                plainIn = new RemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), pageSize, 256);
+                //} else if (sourceFormat.equalsIgnoreCase("symmetricgpg")) {
+                //    plainIn = getSymmetricGPGDecryptingInputStream(fileIn, sourceKey);
+                //} else if (sourceFormat.toLowerCase().startsWith("publicgpg")) {
+                //    plainIn = getAsymmetricGPGDecryptingInputStream(fileIn, sourceKey, sourceFormat);
             }
         } catch (IOException | URISyntaxException ex) {
             System.out.println(" ** " + ex.toString());
@@ -417,48 +415,51 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
 
         return plainIn;
     }
-    
+
     private static void byte_increment_fast(byte[] data, long increment) {
         long countdown = increment / 16; // Count number of block updates
-        
+
         ArrayList<Integer> digits_ = new ArrayList<>();
-        int cnt = 0; long d = 256, cn = 0;
+        int cnt = 0;
+        long d = 256, cn = 0;
         while (countdown > cn && d > 0) {
-            int l = (int) ((countdown % d) / (d/256));
+            int l = (int) ((countdown % d) / (d / 256));
             digits_.add(l);
-            cn += (l*(d/256));
+            cn += (l * (d / 256));
             d *= 256;
         }
         int size = digits_.size();
         int[] digits = new int[size];
-        for (int i=0; i<size; i++) {
-            digits[size-1-i] = digits_.get(i); // intValue()
+        for (int i = 0; i < size; i++) {
+            digits[size - 1 - i] = digits_.get(i); // intValue()
         }
-        
-        int cur_pos = data.length-1, carryover = 0, delta = data.length-digits.length;
-        
-        for (int i=cur_pos; i>=delta; i--) { // Work on individual digits
-            int digit = digits[i-delta] + carryover; // convert to integer
-            int place = (int)(data[i]&0xFF); // convert data[] to integer
-            int new_place = digit+place;
-            if (new_place >= 256) carryover=1; else carryover=0;
+
+        int cur_pos = data.length - 1, carryover = 0, delta = data.length - digits.length;
+
+        for (int i = cur_pos; i >= delta; i--) { // Work on individual digits
+            int digit = digits[i - delta] + carryover; // convert to integer
+            int place = (int) (data[i] & 0xFF); // convert data[] to integer
+            int new_place = digit + place;
+            if (new_place >= 256) carryover = 1;
+            else carryover = 0;
             data[i] = (byte) (new_place % 256);
         }
-        
+
         // Deal with potential last carryovers
         cur_pos -= digits.length;
-        while (carryover == 1 && cur_pos>= 0) {
+        while (carryover == 1 && cur_pos >= 0) {
             data[cur_pos]++;
-            if (data[cur_pos]==0) carryover=1; else carryover=0;
+            if (data[cur_pos] == 0) carryover = 1;
+            else carryover = 0;
             cur_pos--;
         }
-        
+
         return;
     }
-    
+
     private String[] getPath(String path) {
         if (path.equalsIgnoreCase("Virtual File")) return new String[]{"Virtual File"};
-        
+
         try {
             String[] result = new String[4]; // [0] name [1] stable_id [2] size [3] rel path
             result[0] = "";
@@ -472,7 +473,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
             HttpURLConnection connection = null;
             do {
                 try {
-                    connection = (HttpURLConnection)(new URL(fireUrl)).openConnection();
+                    connection = (HttpURLConnection) (new URL(fireUrl)).openConnection();
                     connection.setRequestMethod("GET");
                     connection.setRequestProperty("X-FIRE-Archive", fireArchive);
                     connection.setRequestProperty("X-FIRE-Key", fireKey);
@@ -484,14 +485,14 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                 } catch (Throwable th) {
                     System.out.println("FIRE error: " + th.toString());
                 }
-                if (responseCode!=200) {
+                if (responseCode != 200) {
                     connection = null;
                     Thread.sleep(500);
                 }
-            } while (responseCode!=200 && --reTryCount>0);
+            } while (responseCode != 200 && --reTryCount > 0);
 
             // if Response OK
-            if (responseCode==200) {
+            if (responseCode == 200) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 String inputLine;
                 StringBuilder response = new StringBuilder();
@@ -499,31 +500,31 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                 ArrayList<String[]> paths = new ArrayList<>();
 
                 String object_get = "",             // 1
-                       object_head = "",            // 2
-                       object_md5 = "",             // 3
-                       object_length = "",          // 4
-                       object_url_expire = "",      // 5
-                       object_storage_class = "";   // 6
+                        object_head = "",            // 2
+                        object_md5 = "",             // 3
+                        object_length = "",          // 4
+                        object_url_expire = "",      // 5
+                        object_storage_class = "";   // 6
                 while ((inputLine = in.readLine()) != null) {
                     if (inputLine.startsWith("OBJECT_GET"))
                         object_get = inputLine.substring(inputLine.indexOf("http://")).trim();
                     if (inputLine.startsWith("OBJECT_HEAD"))
-                        object_head = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_head = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_MD5"))
-                        object_md5 = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_md5 = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_LENGTH"))
-                        object_length = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_length = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_URL_EXPIRE"))
-                        object_url_expire = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_url_expire = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_STORAGE_CLASS"))
-                        object_storage_class = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_storage_class = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("END"))
                         paths.add(new String[]{object_get, object_length, object_storage_class});
                 }
                 in.close();
 
                 if (paths.size() > 0) {
-                    for (int i=0; i<paths.size(); i++) {
+                    for (int i = 0; i < paths.size(); i++) {
                         String[] e = paths.get(i);
                         if (!e[0].toLowerCase().contains("/ota/")) { // filter out tape archive
                             result[0] = e[0];   // GET Url
@@ -534,15 +535,15 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String,CachePage>
                     }
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             System.out.println("Path = " + path);
             System.out.println(e.toString());
             //e.printStackTrace();
-        }            
-        
+        }
+
         return null;
     }
-    
+
 }

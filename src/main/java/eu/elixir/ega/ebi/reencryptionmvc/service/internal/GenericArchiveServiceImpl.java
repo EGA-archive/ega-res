@@ -16,11 +16,10 @@
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
 import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
 import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +28,9 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
- *
  * @author asenf
  */
 //@Primary
@@ -39,13 +39,13 @@ import org.springframework.web.client.RestTemplate;
 public class GenericArchiveServiceImpl implements ArchiveService {
 
     private final String SERVICE_URL = "http://DOWNLOADER";
-    
+
     @Autowired
     RestTemplate restTemplate;
-    
+
     @Autowired
     private KeyService keyService;
-    
+
     @Override
 //    @HystrixCommand
     @Retryable(maxAttempts = 8, backoff = @Backoff(delay = 2000, multiplier = 2))
@@ -56,15 +56,15 @@ public class GenericArchiveServiceImpl implements ArchiveService {
         int statusCodeValue = forEntity.getStatusCodeValue();
 //System.out.println("getArchiveFile " + id + ": " + statusCodeValue + "\t(" + forEntity.getBody()==null + ")");        
         EgaFile[] body = forEntity.getBody();
-        if ((body==null||body.length==0)) {
+        if ((body == null || body.length == 0)) {
             throw new NotFoundException("Can't obtain File data for ID", id);
         }
-        String fileName = (body!=null&&body.length>0)?forEntity.getBody()[0].getFileName():"";
-        
+        String fileName = (body != null && body.length > 0) ? forEntity.getBody()[0].getFileName() : "";
+
         // Guess Encryption Format from File
-        String encryptionFormat = fileName.toLowerCase().endsWith("gpg")?"symmetricgpg":"aes256";
-        String keyKey = encryptionFormat.toLowerCase().equals("gpg")?"GPG":"AES";
-        
+        String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";
+        String keyKey = encryptionFormat.toLowerCase().equals("gpg") ? "GPG" : "AES";
+
         String fileUrlString = body[0].getFileName();
         long size = body[0].getFileSize();
 
@@ -74,10 +74,11 @@ public class GenericArchiveServiceImpl implements ArchiveService {
         // Build result object and return it
         return new ArchiveSource(fileUrlString, size, "", encryptionFormat, encryptionKey);
     }
- 
+
     // Downstream Helper Function - List supported ReEncryption Formats
 //    @HystrixCommand
     public String[] getEncryptionFormats() {
         return keyService.getFormats();
     }
+
 }

@@ -20,12 +20,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 public class MyArchiveConfig {
-    private String archiveClass;    
+    private String archiveClass;
 }

@@ -17,18 +17,18 @@ package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
 import eu.elixir.ega.ebi.reencryptionmvc.dto.MyFireConfig;
 import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveAdapterService;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+
 /**
- *
  * @author asenf
  */
 @Service
@@ -37,13 +37,13 @@ public class ArchiveAdapterServiceImpl implements ArchiveAdapterService {
 
     @Autowired
     private MyFireConfig myFireConfig;
-    
+
     @Override
-    @Cacheable(cacheNames="path")
+    @Cacheable(cacheNames = "path")
     public String[] getPath(String path) {
         System.out.println("path=" + path);
         if (path.equalsIgnoreCase("Virtual File")) return new String[]{"Virtual File"};
-        
+
         try {
             String[] result = new String[4]; // [0] name [1] stable_id [2] size [3] rel path
             result[0] = "";
@@ -57,7 +57,7 @@ public class ArchiveAdapterServiceImpl implements ArchiveAdapterService {
             HttpURLConnection connection = null;
             do {
                 try {
-                    connection = (HttpURLConnection)(new URL(myFireConfig.getFireUrl())).openConnection();
+                    connection = (HttpURLConnection) (new URL(myFireConfig.getFireUrl())).openConnection();
                     connection.setRequestMethod("GET");
                     connection.setRequestProperty("X-FIRE-Archive", myFireConfig.getFireArchive());
                     connection.setRequestProperty("X-FIRE-Key", myFireConfig.getFireKey());
@@ -69,14 +69,14 @@ public class ArchiveAdapterServiceImpl implements ArchiveAdapterService {
                 } catch (Throwable th) {
                     System.out.println("FIRE error: " + th.toString());
                 }
-                if (responseCode!=200) {
+                if (responseCode != 200) {
                     connection = null;
                     Thread.sleep(500);
                 }
-            } while (responseCode!=200 && --reTryCount>0);
+            } while (responseCode != 200 && --reTryCount > 0);
 
             // if Response OK
-            if (responseCode==200) {
+            if (responseCode == 200) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 String inputLine;
                 StringBuilder response = new StringBuilder();
@@ -84,31 +84,31 @@ public class ArchiveAdapterServiceImpl implements ArchiveAdapterService {
                 ArrayList<String[]> paths = new ArrayList<>();
 
                 String object_get = "",             // 1
-                       object_head = "",            // 2
-                       object_md5 = "",             // 3
-                       object_length = "",          // 4
-                       object_url_expire = "",      // 5
-                       object_storage_class = "";   // 6
+                        object_head = "",            // 2
+                        object_md5 = "",             // 3
+                        object_length = "",          // 4
+                        object_url_expire = "",      // 5
+                        object_storage_class = "";   // 6
                 while ((inputLine = in.readLine()) != null) {
                     if (inputLine.startsWith("OBJECT_GET"))
                         object_get = inputLine.substring(inputLine.indexOf("http://")).trim();
                     if (inputLine.startsWith("OBJECT_HEAD"))
-                        object_head = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_head = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_MD5"))
-                        object_md5 = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_md5 = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_LENGTH"))
-                        object_length = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_length = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_URL_EXPIRE"))
-                        object_url_expire = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_url_expire = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("OBJECT_STORAGE_CLASS"))
-                        object_storage_class = inputLine.substring(inputLine.indexOf(" ")+1).trim();
+                        object_storage_class = inputLine.substring(inputLine.indexOf(" ") + 1).trim();
                     if (inputLine.startsWith("END"))
                         paths.add(new String[]{object_get, object_length, object_storage_class});
                 }
                 in.close();
 
                 if (paths.size() > 0) {
-                    for (int i=0; i<paths.size(); i++) {
+                    for (int i = 0; i < paths.size(); i++) {
                         String[] e = paths.get(i);
                         if (!e[0].toLowerCase().contains("/ota/")) { // filter out tape archive
                             result[0] = e[0];   // GET Url
@@ -119,15 +119,15 @@ public class ArchiveAdapterServiceImpl implements ArchiveAdapterService {
                     }
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             System.out.println("Path = " + path);
             System.out.println(e.toString());
             //e.printStackTrace();
-        }            
-        
+        }
+
         return null;
     }
-    
+
 }

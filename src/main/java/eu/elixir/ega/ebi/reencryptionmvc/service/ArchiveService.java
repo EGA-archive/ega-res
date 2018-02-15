@@ -16,18 +16,18 @@
 package eu.elixir.ega.ebi.reencryptionmvc.service;
 
 import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.cache.annotation.Cacheable;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
- *
  * @author asenf
  */
 @Cacheable
 public interface ArchiveService {
 
-        public ArchiveSource getArchiveFile(String id, HttpServletResponse response);
-        
-        public String[] getEncryptionFormats();
-        
+    ArchiveSource getArchiveFile(String id, HttpServletResponse response);
+
+    String[] getEncryptionFormats();
+
 }

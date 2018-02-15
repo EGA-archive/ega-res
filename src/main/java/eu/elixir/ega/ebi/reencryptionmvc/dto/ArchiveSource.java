@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -29,7 +28,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class ArchiveSource {
-    
+
     private String fileUrl;
     private long size;
     private String auth;

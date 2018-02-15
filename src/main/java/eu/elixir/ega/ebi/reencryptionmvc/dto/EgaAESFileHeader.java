@@ -15,14 +15,14 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.dto;
 
-import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -35,6 +35,6 @@ public class EgaAESFileHeader implements Serializable {
     private String format;  // aes128 or aes256; possibly gpg
     private long size;      // size of the unencrypted file
     private String url;     // Cleversafe URL of the ile
-    private String sourceKey; 
-    
+    private String sourceKey;
+
 }

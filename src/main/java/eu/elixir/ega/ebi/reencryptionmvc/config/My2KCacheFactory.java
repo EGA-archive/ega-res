@@ -16,27 +16,28 @@
 package eu.elixir.ega.ebi.reencryptionmvc.config;
 
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
-import java.util.concurrent.TimeUnit;
 import org.cache2k.Cache;
 import org.cache2k.Cache2kBuilder;
 import org.springframework.beans.factory.FactoryBean;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- *
  * @author asenf
  */
-public class My2KCacheFactory implements FactoryBean<Cache<String,EgaAESFileHeader>> { //extends SimpleJdbcDaoSupport
+public class My2KCacheFactory implements FactoryBean<Cache<String, EgaAESFileHeader>> { //extends SimpleJdbcDaoSupport
 
     @Override
-    public Cache<String,EgaAESFileHeader> getObject() throws Exception {
-        return new Cache2kBuilder<String, EgaAESFileHeader>() {}
-                        .expireAfterWrite(5, TimeUnit.MINUTES)    // expire/refresh after 5 minutes
-                        .resilienceDuration(30, TimeUnit.SECONDS) // cope with at most 30 seconds
-                                                                  // outage before propagating 
-                                                                  // exceptions
-                        .refreshAhead(false)                       // keep fresh when expiring
-                        //.loader(this::expensiveOperation)         // auto populating function
-                        .build();
+    public Cache<String, EgaAESFileHeader> getObject() throws Exception {
+        return new Cache2kBuilder<String, EgaAESFileHeader>() {
+        }
+                .expireAfterWrite(5, TimeUnit.MINUTES)    // expire/refresh after 5 minutes
+                .resilienceDuration(30, TimeUnit.SECONDS) // cope with at most 30 seconds
+                // outage before propagating
+                // exceptions
+                .refreshAhead(false)                       // keep fresh when expiring
+                //.loader(this::expensiveOperation)         // auto populating function
+                .build();
     }
 
     @Override

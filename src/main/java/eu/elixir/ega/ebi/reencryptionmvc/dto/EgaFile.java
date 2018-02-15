@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -29,8 +28,8 @@ import lombok.Setter;
 @Setter
 @Getter
 public class EgaFile {
-        private String fileId;
-        private String fileName;
-        private long fileSize;
-        private String fileStatus;    
+    private String fileId;
+    private String fileName;
+    private long fileSize;
+    private String fileStatus;
 }

@@ -18,11 +18,10 @@ package eu.elixir.ega.ebi.reencryptionmvc.service;
 import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
 
 /**
- *
  * @author asenf
  */
 public interface SessionService {
-    
-    public Transfer getSessionStats(String session_uuid);
-    
+
+    Transfer getSessionStats(String session_uuid);
+
 }

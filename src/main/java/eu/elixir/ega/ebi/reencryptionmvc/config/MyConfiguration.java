@@ -16,13 +16,7 @@
 package eu.elixir.ega.ebi.reencryptionmvc.config;
 
 import com.google.common.cache.CacheBuilder;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.MyArchiveConfig;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.MyFireConfig;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.MyAwsConfig;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.*;
 import org.cache2k.Cache;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -35,26 +29,36 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 /**
- *
  * @author asenf
  */
 @Configuration
 @EnableCaching
 @EnableDiscoveryClient
 public class MyConfiguration {
-    @Value("${ega.ebi.fire.url}") String fireUrl;
-    @Value("${ega.ebi.fire.archive}") String fireArchive;
-    @Value("${ega.ebi.fire.key}") String fireKey;
 
-    @Value("${ega.ebi.aws.access.key}") String awsKey;
-    @Value("${ega.ebi.aws.access.secret}") String awsSecretKey;
-    
-    @Value("${service.archive.class}") String archiveImplBean;
-    
+    @Value("${ega.ebi.fire.url}")
+    String fireUrl;
+    @Value("${ega.ebi.fire.archive}")
+    String fireArchive;
+    @Value("${ega.ebi.fire.key}")
+    String fireKey;
+
+    @Value("${ega.ebi.aws.access.key}")
+    String awsKey;
+    @Value("${ega.ebi.aws.access.secret}")
+    String awsSecretKey;
+
+    @Value("${service.archive.class}")
+    String archiveImplBean;
+
     //@Value("${ega.ebi.cachepage.size}") int pageSize;
-    @Value("${eureka.client.serviceUrl.defaultZone}") String eurekaUrl;
-    
+    @Value("${eureka.client.serviceUrl.defaultZone}")
+    String eurekaUrl;
+
     @Bean
     @LoadBalanced
     RestTemplate restTemplate() {
@@ -64,21 +68,21 @@ public class MyConfiguration {
     @Bean
     public MyFireConfig MyCipherConfig() {
         return new MyFireConfig(fireUrl,
-                                fireArchive,
-                                fireKey);
+                fireArchive,
+                fireKey);
     }
-    
+
     @Bean
     public MyAwsConfig MyAwsCipherConfig() {
         return new MyAwsConfig(awsKey,
-                               awsSecretKey);
+                awsSecretKey);
     }
 
     @Bean
     public MyArchiveConfig MyArchiveConfig() {
         return new MyArchiveConfig(archiveImplBean);
     }
-    
+
     @Bean
     public Cache<String, EgaAESFileHeader> myCache() throws Exception {
         return (new My2KCacheFactory()).getObject();
@@ -91,13 +95,13 @@ public class MyConfiguration {
     @Bean
     public Cache<String, CachePage> myPageCache() throws Exception {
         int pagesize = 1024 * 1024 * 12;
-        return (new My2KCachePageFactory( pagesize, 
-                                          awsKey,
-                                          awsSecretKey,
-                                          fireUrl,
-                                          fireArchive,
-                                          fireKey,
-                                          eurekaUrl )).getObject();
+        return (new My2KCachePageFactory(pagesize,
+                awsKey,
+                awsSecretKey,
+                fireUrl,
+                fireArchive,
+                fireKey,
+                eurekaUrl)).getObject();
     }
 
     //@Bean
