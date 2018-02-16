@@ -33,7 +33,7 @@ public interface ResService {
     */
     void transfer(String sourceFormat,
                   String sourceKey,
-                  String destintionFormat,
+                  String destinationFormat,
                   String destinationKey,
                   String fileLocation,
                   long startCoordinate,
