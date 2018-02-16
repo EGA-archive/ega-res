@@ -19,12 +19,7 @@ import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
 import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
 import eu.elixir.ega.ebi.reencryptionmvc.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author asenf
@@ -33,17 +28,21 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping("/session")
 public class SessionController {
 
-    @Autowired
     private SessionService sessionService;
 
-    @RequestMapping(value = "/{session_id}", method = GET)
+    @GetMapping(value = "/{sessionId}")
     @ResponseBody
-    public Transfer get(@PathVariable String session_id) {
-        Transfer session = sessionService.getSessionStats(session_id);
+    public Transfer get(@PathVariable String sessionId) {
+        Transfer session = sessionService.getSessionStats(sessionId);
         if (session == null) {
-            throw new NotFoundException("No Session with UUID", session_id);
+            throw new NotFoundException("No Session with UUID", sessionId);
         }
         return session;
+    }
+
+    @Autowired
+    public void setSessionService(SessionService sessionService) {
+        this.sessionService = sessionService;
     }
 
 }
