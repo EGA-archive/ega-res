@@ -101,7 +101,7 @@ public class RandomAccessResServiceImpl implements ResService {
 //    @HystrixCommand
     public void transfer(String sourceFormat,
                          String sourceKey,
-                         String destintionFormat,
+                         String destinationFormat,
                          String destinationKey,
                          String fileLocation,
                          long startCoordinate,
@@ -169,7 +169,7 @@ public class RandomAccessResServiceImpl implements ResService {
 
             // Generate Encrypting OutputStream
             eOut = getTarget(encryptedDigestOut,
-                    destintionFormat,
+                    destinationFormat,
                     destinationKey);
             if (eOut == null) {
                 throw new GeneralStreamingException("Output Stream (ReEncryption Stage) Null", 2);
