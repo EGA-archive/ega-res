@@ -126,17 +126,12 @@ public class RandomAccessResServiceImpl implements ResService {
         long bytes = 0; // Obtained in unencrypted step - counts "true" file size
         try {
             // Build Plain (Decrypting) Input Stream from Source, seek and wrap it in MD5 stream
-            SeekableStream cIn = null;
-            String key = id + destintionFormat;
-            if (destintionFormat.equalsIgnoreCase("plain")) {
-            }
-            if (cIn == null) {
-                cIn = getSource(sourceFormat,
-                        sourceKey,
-                        fileLocation,
-                        httpAuth,
-                        fileSize);
-            }
+            SeekableStream cIn;
+            cIn = getSource(sourceFormat,
+                    sourceKey,
+                    fileLocation,
+                    httpAuth,
+                    fileSize);
             if (cIn == null) {
                 throw new GeneralStreamingException("Input Stream (Decryption Stage) Null", 1);
             }
@@ -145,7 +140,7 @@ public class RandomAccessResServiceImpl implements ResService {
                 cIn.seek(startCoordinate);
             }
             // Handle end coordinate - either read entire stream, or stop at specified coordinate
-            InputStream in = null;
+            InputStream in;
             if (endCoordinate > startCoordinate) {
                 long delta = endCoordinate - startCoordinate;
                 in = ByteStreams.limit(cIn, delta);
@@ -512,7 +507,6 @@ public class RandomAccessResServiceImpl implements ResService {
         while (key == null && rIt.hasNext()) {
             PGPPublicKeyRing kRing = (PGPPublicKeyRing) rIt.next();
             Iterator kIt = kRing.getPublicKeys();
-            boolean encryptionKeyFound = false;
 
             while (key == null && kIt.hasNext()) {
                 PGPPublicKey k = (PGPPublicKey) kIt.next();
@@ -554,7 +548,7 @@ public class RandomAccessResServiceImpl implements ResService {
         // iterate over the keys on the ring, look for one
         // which is suitable for encryption.
         Iterator keys = keyRing.getPublicKeys();
-        PGPPublicKey key = null;
+        PGPPublicKey key;
         while (keys.hasNext()) {
             key = (PGPPublicKey) keys.next();
             if (key.isEncryptionKey()) {
