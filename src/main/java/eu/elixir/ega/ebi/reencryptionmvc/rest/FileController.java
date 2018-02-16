@@ -40,8 +40,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-
 /**
  * @author asenf
  */
@@ -50,13 +48,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping("/file")
 public class FileController {
 
-    // Handle Any Direct Re/Encryption Operations
-    @Autowired
-    private ResService resService;
-
-    // Handle Archived File Operations (file identified by Archive ID)
-    @Autowired
-    private ArchiveService archiveService;
+    private ResService resService; // Handle Any Direct Re/Encryption Operations
+    private ArchiveService archiveService; // Handle Archived File Operations (file identified by Archive ID)
 
     /**
      * Size of a byte buffer to read/write file (for Random Stream)
@@ -64,7 +57,7 @@ public class FileController {
     private static final int BUFFER_SIZE = 4096;
 
     // Direct Re/Encryption (e.g. Pipeline/Import)
-    @RequestMapping(method = GET)
+    @GetMapping
     @ResponseBody
     public void getFile(@RequestParam(value = "sourceFormat", required = false, defaultValue = "plain") String sourceFormat,
                         @RequestParam(value = "sourceKey", required = false) String sourceKey,
@@ -77,8 +70,7 @@ public class FileController {
                         @RequestParam(value = "httpAuth", required = false, defaultValue = "") String httpAuth,
                         String id,
                         HttpServletRequest request,
-                        HttpServletResponse response) throws IOException, NoSuchAlgorithmException {
-
+                        HttpServletResponse response) {
         resService.transfer(sourceFormat,
                 sourceKey,
                 destinationFormat,
@@ -94,7 +86,7 @@ public class FileController {
     }
 
     // Archive File (List File ID rather than full specification) --------------
-    @RequestMapping(value = "/archive/{id}", method = GET)
+    @GetMapping(value = "/archive/{id}")
     @ResponseBody
     public void getArchiveFile(@PathVariable("id") String id,
                                @RequestParam(value = "destinationFormat") String destinationFormat,
@@ -102,7 +94,7 @@ public class FileController {
                                @RequestParam(value = "startCoordinate", required = false, defaultValue = "0") long startCoordinate,
                                @RequestParam(value = "endCoordinate", required = false, defaultValue = "0") long endCoordinate,
                                HttpServletRequest request,
-                               HttpServletResponse response) throws IOException, NoSuchAlgorithmException {
+                               HttpServletResponse response) {
 
         // Resolve Archive ID to actual File Path/URL - Needs Organization-Specific Implementation!
         ArchiveSource source = archiveService.getArchiveFile(id, response);
@@ -123,10 +115,10 @@ public class FileController {
     }
 
     // Archive File (List File ID rather than full specification) --------------
-    @RequestMapping(value = "/archive/{id}/size", method = GET)
+    @GetMapping(value = "/archive/{id}/size")
     public long getArchiveFileSize(@PathVariable("id") String id,
                                    HttpServletRequest request,
-                                   HttpServletResponse response) throws IOException, NoSuchAlgorithmException {
+                                   HttpServletResponse response) {
 
         // Resolve Archive ID to actual File Path/URL - Needs Organization-Specific Implementation!
         ArchiveSource source = archiveService.getArchiveFile(id, response);
@@ -138,9 +130,9 @@ public class FileController {
         return source.getSize();
     }
 
-    @RequestMapping(value = "/availableformats", method = GET)
+    @GetMapping(value = "/availableformats")
     @ResponseBody
-    public String[] getArchiveFile() {
+    public String[] getAvailableFormats() {
         return archiveService.getEncryptionFormats();
     }
 
@@ -150,7 +142,7 @@ public class FileController {
     // ************************************************************************* Test Code - To be Removed!
 
     // Generate a random input stream and return it as a Flux of byte[]
-    @RequestMapping(value = "/test1/{size}", method = GET)
+    @GetMapping(value = "/test1/{size}")
     public void getArchiveFile(@PathVariable("size") String size) {
         RandomInputStream in = new RandomInputStream(Integer.parseInt(size));
         BufferedBackgroundInputStream bbIn = new BufferedBackgroundInputStream(in);
@@ -165,7 +157,7 @@ public class FileController {
 
 
     // Return a stream of random bytes
-    @RequestMapping(value = "/test2/{size}", method = GET)
+    @GetMapping(value = "/test2/{size}")
     public String doDownload(@PathVariable("size") String size,
                              @RequestParam(value = "random", required = false) boolean random,
                              HttpServletRequest request,
@@ -222,6 +214,16 @@ public class FileController {
 
         return hashtext_;
 
+    }
+
+    @Autowired
+    public void setResService(ResService resService) {
+        this.resService = resService;
+    }
+
+    @Autowired
+    public void setArchiveService(ArchiveService archiveService) {
+        this.archiveService = archiveService;
     }
 
 }
