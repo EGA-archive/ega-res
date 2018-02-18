@@ -15,49 +15,51 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.rest;
 
-import java.lang.management.ManagementFactory;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import org.springframework.web.bind.annotation.ResponseBody;
+import java.lang.management.ManagementFactory;
 
 /**
- *
  * @author asenf
  */
 @RestController
 @RequestMapping("/stats")
 public class StatsController {
-    
-    @RequestMapping(value = "/load", method = GET)
+
+    @GetMapping(value = "/load")
     @ResponseBody
     public String get() {
-        
-        String load = "NN";
-        try {load = String.valueOf(getProcessCpuLoad());
-        } catch (Exception ex) {load = "Error";}
-        
-        return load;
+        try {
+            return String.valueOf(getProcessCPULoad());
+        } catch (Exception ex) {
+            return "Error";
+        }
     }
 
     // Obtain local CPU Load (used by EBI Load Balancer as Heartbeat)
-    private static double getProcessCpuLoad() throws Exception {
-        MBeanServer mbs    = ManagementFactory.getPlatformMBeanServer();
-        ObjectName name    = ObjectName.getInstance("java.lang:type=OperatingSystem");
-        AttributeList list = mbs.getAttributes(name, new String[]{ "ProcessCpuLoad" });
+    private static double getProcessCPULoad() throws Exception {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
+        AttributeList list = mbs.getAttributes(name, new String[]{"ProcessCpuLoad"});
 
-        if (list.isEmpty())     return Double.NaN;
+        if (list.isEmpty()) {
+            return Double.NaN;
+        }
 
-        Attribute att = (Attribute)list.get(0);
-        Double value  = (Double)att.getValue();
+        Attribute att = (Attribute) list.get(0);
+        Double value = (Double) att.getValue();
 
-        if (value == -1.0)      return Double.NaN;
-        return ((int)(value * 1000) / 10.0);
+        if (value == -1.0) {
+            return Double.NaN;
+        }
+        return ((int) (value * 1000) / 10.0);
     }
+
 }

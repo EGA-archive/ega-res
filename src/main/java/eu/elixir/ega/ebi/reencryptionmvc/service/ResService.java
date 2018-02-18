@@ -19,29 +19,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- *
  * @author asenf
  */
 public interface ResService {
-/*    
-        public InputStream getSource(String sourceFormat,
-                                        String sourceKey,
-                                        String destintionFormat,
-                                        String destinationKey,
-                                        String fileLocation,
-                                        long startCoordinate,
-                                        long endCoordinate);
-*/
-        public void transfer(String sourceFormat,
-                             String sourceKey,
-                             String destintionFormat,
-                             String destinationKey,
-                             String fileLocation,
-                             long startCoordinate,
-                             long endCoordinate,
-                             long fileSize,
-                             String httpAuth,
-                             String id,
-                             HttpServletRequest request,
-                             HttpServletResponse response);
+    /*
+             InputStream getSource(String sourceFormat,
+                                            String sourceKey,
+                                            String destintionFormat,
+                                            String destinationKey,
+                                            String fileLocation,
+                                            long startCoordinate,
+                                            long endCoordinate);
+    */
+    void transfer(String sourceFormat,
+                  String sourceKey,
+                  String destinationFormat,
+                  String destinationKey,
+                  String fileLocation,
+                  long startCoordinate,
+                  long endCoordinate,
+                  long fileSize,
+                  String httpAuth,
+                  String id,
+                  HttpServletRequest request,
+                  HttpServletResponse response);
 }

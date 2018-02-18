@@ -19,9 +19,8 @@ import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
 import org.springframework.data.repository.CrudRepository;
 
 /**
- *
  * @author asenf
  */
-public interface TransferRepository  extends CrudRepository<Transfer, String> {
-    
+public interface TransferRepository extends CrudRepository<Transfer, String> {
+
 }

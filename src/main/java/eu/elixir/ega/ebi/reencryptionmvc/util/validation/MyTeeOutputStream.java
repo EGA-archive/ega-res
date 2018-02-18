@@ -15,12 +15,10 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.util.validation;
 
-import eu.elixir.ega.ebi.reencryptionmvc.util.validation.CircularByteBuffer;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- *
  * @author asenf
  */
 public final class MyTeeOutputStream extends OutputStream {
@@ -28,11 +26,11 @@ public final class MyTeeOutputStream extends OutputStream {
     private final OutputStream out;
     CircularByteBuffer cbb;
 
-    public MyTeeOutputStream(OutputStream out, CircularByteBuffer cbb) {        
+    public MyTeeOutputStream(OutputStream out, CircularByteBuffer cbb) {
         if (out == null)
-          throw new NullPointerException();
+            throw new NullPointerException();
         else if (cbb == null)
-          throw new NullPointerException();
+            throw new NullPointerException();
 
         this.out = out;
         this.cbb = cbb;
@@ -67,4 +65,5 @@ public final class MyTeeOutputStream extends OutputStream {
         out.close();
         cbb.getOutputStream().close();
     }
+
 }

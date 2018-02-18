@@ -17,12 +17,11 @@ package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
 import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
 import eu.elixir.ega.ebi.reencryptionmvc.config.ServerErrorException;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
 import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveAdapterService;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
 import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -34,8 +33,9 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
- *
  * @author asenf
  */
 @Primary
@@ -44,39 +44,39 @@ import org.springframework.web.client.RestTemplate;
 public class CleversaveArchiveServiceImpl implements ArchiveService {
 
     private final String SERVICE_URL = "http://DATA";
-    
+
     @Autowired
     RestTemplate restTemplate;
-    
+
     @Autowired
     private KeyService keyService;
-    
+
     @Autowired
     private ArchiveAdapterService archiveAdapterService;
-    
+
     @Override
     @Retryable(maxAttempts = 8, backoff = @Backoff(delay = 2000, multiplier = 2))
-    @Cacheable(cacheNames="archive")
+    @Cacheable(cacheNames = "archive")
     public ArchiveSource getArchiveFile(String id, HttpServletResponse response) {
 
         // Get Filename from EgaFile ID - via DATA service (potentially multiple files)
         ResponseEntity<EgaFile[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", EgaFile[].class, id);
         response.setStatus(forEntity.getStatusCodeValue());
-        if (forEntity.getStatusCode()!=HttpStatus.OK) return null;
-        
+        if (forEntity.getStatusCode() != HttpStatus.OK) return null;
+
         EgaFile[] body = forEntity.getBody();
-        String fileName = (body!=null&&body.length>0)?forEntity.getBody()[0].getFileName():"";
-        if ((body==null||body.length==0)) {
+        String fileName = (body != null && body.length > 0) ? forEntity.getBody()[0].getFileName() : "";
+        if ((body == null || body.length == 0)) {
             response.setStatus(forEntity.getStatusCodeValue());
             throw new NotFoundException("Can't obtain File data for ID", id);
         }
         if (fileName.startsWith("/fire")) fileName = fileName.substring(16);
         // Guess Encryption Format from File
-        String encryptionFormat = fileName.toLowerCase().endsWith("gpg")?"symmetricgpg":"aes256";
-        String keyKey = encryptionFormat.toLowerCase().equals("gpg")?"GPG":"AES";
+        String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";
+        String keyKey = encryptionFormat.toLowerCase().equals("gpg") ? "GPG" : "AES";
         // Get Cleversafe URL from Filename via Fire
         String[] filePath = archiveAdapterService.getPath(fileName);
-        if (filePath==null || filePath[0]== null) {
+        if (filePath == null || filePath[0] == null) {
             response.setStatus(530);
             throw new ServerErrorException("Fire Error in obtaining URL for ", fileName);
         }
@@ -85,7 +85,7 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
 
         // Get EgaFile encryption Key
         String encryptionKey = keyService.getFileKey(keyKey);
-        if (encryptionKey==null || encryptionKey.length()==0) {
+        if (encryptionKey == null || encryptionKey.length() == 0) {
             response.setStatus(532);
             throw new ServerErrorException("Error in obtaining Archive Key for ", fileName);
         }
@@ -99,4 +99,5 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
     public String[] getEncryptionFormats() {
         return keyService.getFormats();
     }
+
 }

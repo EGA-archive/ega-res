@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 /**
- *
  * @author asenf
  */
 @Service
@@ -34,19 +33,19 @@ import org.springframework.web.client.RestTemplate;
 public class KeyServiceImpl implements KeyService {
 
     private final String SERVICE_URL = "http://KEYSERVICE";
-    
+
     @Autowired
     RestTemplate restTemplate;
-    
+
     @Override
 //    @HystrixCommand
     //@Retryable(maxAttempts = 4, backoff = @Backoff(delay = 5000))
-    @Cacheable(cacheNames="key")
+    @Cacheable(cacheNames = "key")
     public String getFileKey(String fileId) {
-        
+
         ResponseEntity<String> forEntity = restTemplate.getForEntity(SERVICE_URL + "/keys/filekeys/{file_id}", String.class, fileId);
         String body = forEntity.getBody();
-        
+
         return body;
     }
 
@@ -54,21 +53,21 @@ public class KeyServiceImpl implements KeyService {
 //    @HystrixCommand
     //@Retryable(maxAttempts = 4, backoff = @Backoff(delay = 5000))
     public String[] getFormats() {
-        
+
         ResponseEntity<String[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/keys/formats", String[].class);
-        String[] body = forEntity.getBody();        
-        
+        String[] body = forEntity.getBody();
+
         return body;
     }
-    
+
     @Override
 //    @HystrixCommand
     //@Retryable(maxAttempts = 4, backoff = @Backoff(delay = 5000))
     public String[] getKeyPath(String key) {
-        
+
         ResponseEntity<String[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/keys/paths/{key}", String[].class, key);
-        String[] body = forEntity.getBody();        
-        
+        String[] body = forEntity.getBody();
+
         return body;
     }
 

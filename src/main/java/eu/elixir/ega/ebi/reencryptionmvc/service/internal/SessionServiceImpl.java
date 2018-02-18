@@ -22,12 +22,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- *
  * @author asenf
  */
 @Service
 public class SessionServiceImpl implements SessionService {
-    
+
     @Autowired
     private TransferRepository transferRepository;
 
@@ -37,5 +36,4 @@ public class SessionServiceImpl implements SessionService {
         return transferRepository.findOne(session_uuid);
     }
 
-    
 }

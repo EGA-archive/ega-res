@@ -21,26 +21,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author asenf
  */
 public class EmptyValidation implements Runnable {
 
     private final InputStream in;
-    
+
     public EmptyValidation(InputStream in) {
         this.in = in;
     }
-    
+
     @Override
     public void run() {
-        
+
         byte[] buffer = new byte[65535];
         int readCount = 0;
         long total = 0;
-        
+
         try {
-            while ( (readCount = in.read(buffer)) > -1) { // As long as stream isn't cosed?
+            while ((readCount = in.read(buffer)) > -1) { // As long as stream isn't cosed?
                 if (readCount > 0) {
                     total += readCount;
 
@@ -56,7 +55,6 @@ public class EmptyValidation implements Runnable {
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(EmptyValidation.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
     }
-    
+
 }

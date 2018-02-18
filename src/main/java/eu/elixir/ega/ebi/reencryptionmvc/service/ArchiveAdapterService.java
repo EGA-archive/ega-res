@@ -18,12 +18,11 @@ package eu.elixir.ega.ebi.reencryptionmvc.service;
 import org.springframework.cache.annotation.Cacheable;
 
 /**
- *
  * @author asenf
  */
 @Cacheable
 public interface ArchiveAdapterService {
 
-        public String[] getPath(String path);
-        
+    String[] getPath(String path);
+
 }

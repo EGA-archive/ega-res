@@ -18,16 +18,15 @@ package eu.elixir.ega.ebi.reencryptionmvc.service;
 import org.springframework.cache.annotation.Cacheable;
 
 /**
- *
  * @author asenf
  */
 @Cacheable
 public interface KeyService {
-    
-    public String getFileKey(String fileId);
-    
-    public String[] getFormats();
-    
-    public String[] getKeyPath(String key);
-    
+
+    String getFileKey(String fileId);
+
+    String[] getFormats();
+
+    String[] getKeyPath(String key);
+
 }

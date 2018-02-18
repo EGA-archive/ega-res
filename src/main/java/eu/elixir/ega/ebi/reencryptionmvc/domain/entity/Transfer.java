@@ -15,21 +15,21 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.domain.entity;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.io.Serializable;
+import java.sql.Timestamp;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -40,31 +40,31 @@ import lombok.Setter;
 @Table(name = "transfer_log")
 public class Transfer implements Serializable {
 
-        @Id
-        @NotNull
-        @Size(max=36)
-        @Column(name="transfer_uuid", nullable=false, length=36)
-        private String uuid;
+    @Id
+    @NotNull
+    @Size(max = 36)
+    @Column(name = "transfer_uuid", nullable = false, length = 36)
+    private String uuid;
 
-        @Column(name="timestamp")
-        private Timestamp timestamp;
+    @Column(name = "timestamp")
+    private Timestamp timestamp;
 
-        @Size(max=32)
-        @Column(name="md5_1", length=32)
-        private String md5_1;
+    @Size(max = 32)
+    @Column(name = "md5_1", length = 32)
+    private String md5_1;
 
-        @Size(max=32)
-        @Column(name="md5_2", length=32)
-        private String md5_2;
+    @Size(max = 32)
+    @Column(name = "md5_2", length = 32)
+    private String md5_2;
 
-        @Column(name="read")
-        private long read;
+    @Column(name = "read")
+    private long read;
 
-        @Column(name="sent")
-        private long sent;
+    @Column(name = "sent")
+    private long sent;
 
-        @Size(max=128)
-        @Column(name="service", length=128)
-        private String service;
-    
+    @Size(max = 128)
+    @Column(name = "service", length = 128)
+    private String service;
+
 }
