@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
@@ -38,8 +39,9 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author asenf
  */
-@Primary
 @Service
+@Profile("default")
+@Primary
 @EnableDiscoveryClient
 public class CleversaveArchiveServiceImpl implements ArchiveService {
 

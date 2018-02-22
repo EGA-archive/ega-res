@@ -27,14 +27,17 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author asenf
  */
-//@Primary
 @Service
+@Profile("enable-filesystem-based-archive")
+@Primary
 @EnableDiscoveryClient
 public class GenericArchiveServiceImpl implements ArchiveService {
 
