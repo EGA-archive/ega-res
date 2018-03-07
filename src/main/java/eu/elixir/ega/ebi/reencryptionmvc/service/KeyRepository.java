@@ -11,7 +11,7 @@ import java.util.Iterator;
 @Repository
 public class KeyRepository {
 
-    public byte[] getAESPrivateKey(String sourceKey) throws IOException {
+    public byte[] getAESRSAKey(String sourceKey) throws IOException {
         try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream(sourceKey)))) {
             return pemReader.readPemObject().getContent();
         }
