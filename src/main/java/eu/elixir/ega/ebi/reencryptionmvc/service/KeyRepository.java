@@ -1,5 +1,6 @@
 package eu.elixir.ega.ebi.reencryptionmvc.service;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.util.io.pem.PemReader;
@@ -11,7 +12,15 @@ import java.util.Iterator;
 @Repository
 public class KeyRepository {
 
-    public byte[] getAESRSAKey(String sourceKey) throws IOException {
+    public byte[] getRSAKeyById(String id) {
+        throw new NotImplementedException();
+    }
+
+    public PGPPublicKey getPGPPublicKeyById(String id) {
+        throw new NotImplementedException();
+    }
+
+    public byte[] getRSAKey(String sourceKey) throws IOException {
         try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream(sourceKey)))) {
             return pemReader.readPemObject().getContent();
         }

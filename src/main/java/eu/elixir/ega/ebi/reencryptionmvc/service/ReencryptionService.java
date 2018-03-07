@@ -42,7 +42,7 @@ public class ReencryptionService {
                                       long endCoordinate) throws IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException, InvalidKeyException, InvalidKeySpecException, PGPException {
         SeekableStream seekableStream = seekableStreamFactory.getStreamFor(fileLocation);
         if (Format.AES.equals(sourceFormat)) {
-            seekableStream = new SeekableAESCipherStream(seekableStream, Objects.requireNonNull(keyRepository.getAESRSAKey(sourceKey)));
+            seekableStream = new SeekableAESCipherStream(seekableStream, Objects.requireNonNull(keyRepository.getRSAKey(sourceKey)));
         }
         seekableStream.seek(startCoordinate);
         InputStream inputStream = endCoordinate != 0 && endCoordinate > startCoordinate ?
