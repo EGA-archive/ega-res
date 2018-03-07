@@ -41,6 +41,8 @@ import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyDecryptorBuilder;
 import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Primary;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.stereotype.Service;
 
@@ -69,6 +71,8 @@ import java.util.UUID;
  * @author asenf
  */
 @Service
+@Profile("disable-cache")
+@Primary
 @EnableDiscoveryClient
 public class RandomAccessResServiceImpl implements ResService {
 

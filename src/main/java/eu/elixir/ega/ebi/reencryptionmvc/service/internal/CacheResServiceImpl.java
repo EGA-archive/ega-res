@@ -44,6 +44,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.cache2k.Cache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -73,6 +74,7 @@ import java.util.concurrent.Executors;
  * @author asenf
  */
 @Service
+@Profile("default")
 @Primary
 @EnableDiscoveryClient
 public class CacheResServiceImpl implements ResService {
