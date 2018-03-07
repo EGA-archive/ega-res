@@ -34,22 +34,22 @@ public class ReencryptionService {
     }
 
     public InputStream getInputStream(Format sourceFormat,
-                                      String sourceKey,
+                                      String sourceKeyId,
                                       Format targetFormat,
-                                      String targetKey,
+                                      String targetKeyId,
                                       String fileLocation,
                                       long startCoordinate,
                                       long endCoordinate) throws IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchProviderException, InvalidKeyException, InvalidKeySpecException, PGPException {
         SeekableStream seekableStream = seekableStreamFactory.getStreamFor(fileLocation);
         if (Format.AES.equals(sourceFormat)) {
-            seekableStream = new SeekableAESCipherStream(seekableStream, Objects.requireNonNull(keyRepository.getRSAKey(sourceKey)));
+            seekableStream = new SeekableAESCipherStream(seekableStream, Objects.requireNonNull(keyRepository.getRSAKeyById(sourceKeyId)));
         }
         seekableStream.seek(startCoordinate);
         InputStream inputStream = endCoordinate != 0 && endCoordinate > startCoordinate ?
                 new BoundedInputStream(seekableStream, endCoordinate - startCoordinate) :
                 seekableStream;
         if (Format.GPG.equals(targetFormat)) {
-            inputStream = new GPGCipherStream(inputStream, Objects.requireNonNull(keyRepository.getPGPPublicKey(targetKey)), StringUtils.getFilename(fileLocation));
+            inputStream = new GPGCipherStream(inputStream, Objects.requireNonNull(keyRepository.getPGPPublicKeyById(targetKeyId)), StringUtils.getFilename(fileLocation));
         }
         return inputStream;
     }

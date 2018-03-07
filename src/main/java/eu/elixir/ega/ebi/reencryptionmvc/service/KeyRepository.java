@@ -1,6 +1,5 @@
 package eu.elixir.ega.ebi.reencryptionmvc.service;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.util.io.pem.PemReader;
@@ -12,22 +11,16 @@ import java.util.Iterator;
 @Repository
 public class KeyRepository {
 
-    public byte[] getRSAKeyById(String id) {
-        throw new NotImplementedException();
-    }
-
-    public PGPPublicKey getPGPPublicKeyById(String id) {
-        throw new NotImplementedException();
-    }
-
-    public byte[] getRSAKey(String sourceKey) throws IOException {
-        try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream(sourceKey)))) {
+    public byte[] getRSAKeyById(String id) throws IOException {
+        // TODO: temporary implementation - treat "id" as file path
+        try (PemReader pemReader = new PemReader(new InputStreamReader(new FileInputStream(id)))) {
             return pemReader.readPemObject().getContent();
         }
     }
 
-    public PGPPublicKey getPGPPublicKey(String targetKey) throws IOException, PGPException {
-        InputStream in = new FileInputStream(new File(targetKey));
+    public PGPPublicKey getPGPPublicKeyById(String id) throws IOException, PGPException {
+        // TODO: temporary implementation - treat "id" as file path
+        InputStream in = new FileInputStream(new File(id));
         in = PGPUtil.getDecoderStream(in);
         PGPPublicKeyRingCollection pgpPublicKeyRings = new PGPPublicKeyRingCollection(in, new BcKeyFingerprintCalculator());
         PGPPublicKey pgpPublicKey = null;
