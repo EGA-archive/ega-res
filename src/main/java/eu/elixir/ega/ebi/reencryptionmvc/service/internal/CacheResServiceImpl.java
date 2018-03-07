@@ -121,6 +121,7 @@ public class CacheResServiceImpl implements ResService {
                          String sourceKey,
                          String destintionFormat,
                          String destinationKey,
+                         String destinationIV,
                          String fileLocation,
                          long startCoordinate,
                          long endCoordinate,

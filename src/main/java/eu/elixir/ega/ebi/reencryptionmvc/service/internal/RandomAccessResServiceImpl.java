@@ -107,6 +107,7 @@ public class RandomAccessResServiceImpl implements ResService {
                          String sourceKey,
                          String destinationFormat,
                          String destinationKey,
+                         String destinationIV,
                          String fileLocation,
                          long startCoordinate,
                          long endCoordinate,
