@@ -4,6 +4,7 @@ import eu.elixir.ega.ebi.reencryptionmvc.domain.Format;
 import eu.elixir.ega.ebi.reencryptionmvc.service.ReencryptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -15,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.io.InputStream;
 
 // Test files can be found at "src/test/resources/htsjdk/samtools/seekablestream/cipher/" under ega-htsdjk project
-// http://localhost:8080/download?fileLocation=/lorem.aes.enc&startByte=10&endByte=20&sourceFormat=AES&sourceKey=/ega.sec&targetFormat=GPG&targetKey=/public.key
+@Profile("LocalEGA")
 @EnableDiscoveryClient
-@RequestMapping("/download")
+@RequestMapping("/file")
 @RestController
 public class ReencryptionController {
 
@@ -29,11 +30,11 @@ public class ReencryptionController {
     @ResponseBody
     public ResponseEntity<Resource> download(@RequestParam(value = "sourceFormat", required = false, defaultValue = "plain") String sourceFormat,
                                              @RequestParam(value = "sourceKey", required = false) String sourceKey,
-                                             @RequestParam(value = "targetFormat", required = false, defaultValue = "plain") String targetFormat,
-                                             @RequestParam(value = "targetKey", required = false) String targetKey,
-                                             @RequestParam(value = "fileLocation") String fileLocation,
-                                             @RequestParam(value = "startByte", required = false, defaultValue = "0") long startByte,
-                                             @RequestParam(value = "endByte", required = false, defaultValue = "0") long endByte) throws Exception {
+                                             @RequestParam(value = "destinationFormat", required = false, defaultValue = "plain") String targetFormat,
+                                             @RequestParam(value = "destinationKey", required = false) String targetKey,
+                                             @RequestParam(value = "filePath") String fileLocation,
+                                             @RequestParam(value = "startCoordinate", required = false, defaultValue = "0") long startByte,
+                                             @RequestParam(value = "endCoordinate", required = false, defaultValue = "0") long endByte) throws Exception {
         InputStream inputStream = reencryptionService.getInputStream(Format.valueOf(sourceFormat.toUpperCase()),
                 sourceKey,
                 Format.valueOf(targetFormat.toUpperCase()),
