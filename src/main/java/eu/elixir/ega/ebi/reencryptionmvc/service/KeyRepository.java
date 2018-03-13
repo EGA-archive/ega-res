@@ -29,9 +29,6 @@ public class KeyRepository {
         // ResponseEntity<Resource> responseEntity =
         //        restTemplate.getForEntity(keyServiceURL + "/retrieve/rsa/rsa.key." + id, Resource.class);
 
-        // TODO: need to disable SSL verification in order to make it work; did not commit those files, because it's WA
-        // SSLUtilities.trustAllHostnames();
-        // SSLUtilities.trustAllHttpsCertificates();
         HashMap response = new Gson().fromJson(IOUtils.toString(new URL(keyServiceURL + "/retrieve/rsa/rsa.key." + id).openStream(), Charset.defaultCharset()), HashMap.class);
         String privateKey = String.valueOf(response.get("public")); // type here: will be replaced to "private"
         byte[] privateKeyBytes = Hex.decodeHex(privateKey.toCharArray());
