@@ -44,7 +44,6 @@ import java.util.stream.StreamSupport;
 /**
  * @author asenf
  */
-@Profile("!LocalEGA")
 @RestController
 @EnableDiscoveryClient
 @RequestMapping("/file")

@@ -74,7 +74,7 @@ import java.util.concurrent.Executors;
  * @author asenf
  */
 @Service
-@Profile("default")
+@Profile("!LocalEGA")
 @Primary
 @EnableDiscoveryClient
 public class CacheResServiceImpl implements ResService {

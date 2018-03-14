@@ -16,10 +16,11 @@
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
 import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -28,7 +29,7 @@ import org.springframework.web.client.RestTemplate;
  * @author asenf
  */
 @Service
-@Primary
+@Profile("!LocalEGA")
 @EnableDiscoveryClient
 public class KeyServiceImpl implements KeyService {
 
@@ -69,6 +70,18 @@ public class KeyServiceImpl implements KeyService {
         String[] body = forEntity.getBody();
 
         return body;
+    }
+
+    // Local EGA Functionality - Not Required for Central EGA / EBI
+    
+    @Override
+    public byte[] getRSAKeyById(String keyId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public PGPPublicKey getPGPPublicKeyById(String keyId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
