@@ -68,7 +68,7 @@ public class LocalEgaKeyServiceImpl implements KeyService {
         return pgpPublicKey;
     }
 
-    @Value("${localega.keyserver.url:https://localhost:443}")
+    @Value("${localega.keyserver.url:http://localhost:8443}")
     public void setKeyServiceURL(String keyServiceURL) {
         this.keyServiceURL = keyServiceURL;
     }
