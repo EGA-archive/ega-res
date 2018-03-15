@@ -33,9 +33,9 @@ public class LocalEgaKeyServiceImpl implements KeyService {
     public byte[] getRSAKeyById(String id) throws IOException, DecoderException {
         // TODO: bring that back after LocalEGA key server becomes able to register itself against Eureka
         // ResponseEntity<Resource> responseEntity =
-        //        restTemplate.getForEntity(keyServiceURL + "/retrieve/rsa/rsa.key." + id, Resource.class);
+        //        restTemplate.getForEntity(keyServiceURL + "/retrieve/rsa/" + id, Resource.class);
 
-        HashMap response = new Gson().fromJson(IOUtils.toString(new URL(keyServiceURL + "/retrieve/rsa/rsa.key." + id).openStream(), Charset.defaultCharset()), HashMap.class);
+        HashMap response = new Gson().fromJson(IOUtils.toString(new URL(keyServiceURL + "/retrieve/rsa/" + id).openStream(), Charset.defaultCharset()), HashMap.class);
         String privateKey = String.valueOf(response.get("public")); // type here: will be replaced to "private"
         byte[] privateKeyBytes = Hex.decodeHex(privateKey.toCharArray());
         try (PemReader pemReader = new PemReader(new InputStreamReader(new ByteArrayInputStream(privateKeyBytes)))) {
