@@ -30,7 +30,6 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication
 @Import({MyConfiguration.class})
-@EnableSwagger2
 //@EnableCircuitBreaker
 //@EnableHystrix
 @EnableCaching
@@ -40,16 +39,6 @@ public class ReEncryptionMvcApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ReEncryptionMvcApplication.class, args);
-    }
-
-    @Bean
-    public Docket swaggerSettings() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
-                .build()
-                .pathMapping("/");
     }
 
 }
