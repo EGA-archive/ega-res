@@ -15,22 +15,23 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
-import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
-import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 
-import javax.servlet.http.HttpServletResponse;
+import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
+import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 
 /**
  * @author asenf
@@ -66,7 +67,7 @@ public class GenericArchiveServiceImpl implements ArchiveService {
 
         // Guess Encryption Format from File
         String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";
-        String keyKey = encryptionFormat.toLowerCase().equals("gpg") ? "GPG" : "AES";
+        String keyKey = encryptionFormat.toLowerCase().equals("symmetricgpg") ? "GPG" : "AES";
 
         String fileUrlString = body[0].getFileName();
         long size = body[0].getFileSize();
