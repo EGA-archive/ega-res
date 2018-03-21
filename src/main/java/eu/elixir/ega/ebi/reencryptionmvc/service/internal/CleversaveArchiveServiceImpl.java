@@ -15,13 +15,8 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
-import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
-import eu.elixir.ega.ebi.reencryptionmvc.config.ServerErrorException;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveAdapterService;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
-import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -34,7 +29,13 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpServletResponse;
+import eu.elixir.ega.ebi.reencryptionmvc.config.NotFoundException;
+import eu.elixir.ega.ebi.reencryptionmvc.config.ServerErrorException;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaFile;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveAdapterService;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ArchiveService;
+import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 
 /**
  * @author asenf
@@ -75,7 +76,7 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
         if (fileName.startsWith("/fire")) fileName = fileName.substring(16);
         // Guess Encryption Format from File
         String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";
-        String keyKey = encryptionFormat.toLowerCase().equals("gpg") ? "GPG" : "AES";
+        String keyKey = encryptionFormat.toLowerCase().equals("symmetricgpg") ? "GPG" : "AES";
         // Get Cleversafe URL from Filename via Fire
         String[] filePath = archiveAdapterService.getPath(fileName);
         if (filePath == null || filePath[0] == null) {
