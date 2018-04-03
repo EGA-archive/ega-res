@@ -71,8 +71,7 @@ import java.util.UUID;
  * @author asenf
  */
 @Service
-@Profile("disable-cache")
-@Primary
+@Profile("!LocalEGA")
 @EnableDiscoveryClient
 public class RandomAccessResServiceImpl implements ResService {
 
