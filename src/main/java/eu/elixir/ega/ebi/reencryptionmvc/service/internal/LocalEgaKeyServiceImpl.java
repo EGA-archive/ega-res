@@ -39,8 +39,9 @@ public class LocalEgaKeyServiceImpl implements KeyService {
         // ResponseEntity<Resource> responseEntity =
         //        restTemplate.getForEntity(keyServiceURL + "/temp/rsa/" + id, Resource.class);
 
-        HashMap response = new Gson().fromJson(IOUtils.toString(new URL(keyServiceURL + "/temp/rsa/" + id).openStream(), Charset.defaultCharset()), HashMap.class);
-        String privateKey = String.valueOf(response.get("public")); // type here: will be replaced to "private"
+        String rawKey =  IOUtils.toString(new URL(keyServiceURL + "/temp/rsa/" + id).openStream(), Charset.defaultCharset());
+        System.out.println("DEBUG getRSAKey: rawKey=" + rawKey);
+        String privateKey = String.valueOf(rawKey);
         byte[] privateKeyBytes = Hex.decodeHex(privateKey.toCharArray());
         try (PemReader pemReader = new PemReader(new InputStreamReader(new ByteArrayInputStream(privateKeyBytes)))) {
             return pemReader.readPemObject().getContent();
