@@ -20,8 +20,8 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 import eu.elixir.ega.ebi.reencryptionmvc.service.ResService;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.seekablestream.cipher.GPGAsymmetricCipherStream;
-import htsjdk.samtools.seekablestream.cipher.GPGSymmetricCipherStream;
+import htsjdk.samtools.seekablestream.cipher.GPGAsymmetricCipherOutputStream;
+import htsjdk.samtools.seekablestream.cipher.GPGSymmetricCipherOutputStream;
 import htsjdk.samtools.seekablestream.cipher.SeekableAESCipherStream;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.io.IOUtils;
@@ -63,9 +63,6 @@ public class LocalEgaServiceImpl implements ResService {
     @Autowired
     private KeyService keyService;
 
-    // This should be in DataEdge
-    //private static final String CONTENT_DISPOSITION_PREFIX = "attachment; filename=";
-
     @PostConstruct
     private void init() {
         Security.addProvider(new BouncyCastleProvider());
@@ -89,15 +86,15 @@ public class LocalEgaServiceImpl implements ResService {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
-            outputStream = response.getOutputStream();
-
             inputStream = getInputStream(Format.valueOf(sourceFormat.toUpperCase()),
                     sourceKey,
-                    Format.valueOf(destinationFormat.toUpperCase()),
-                    destinationKey,
                     fileLocation,
                     startCoordinate,
                     endCoordinate);
+            outputStream = getOutputStream(response.getOutputStream(),
+                    fileLocation,
+                    Format.valueOf(destinationFormat.toUpperCase()),
+                    destinationKey);
         } catch (Exception e) {
             Logger.getLogger(LocalEgaServiceImpl.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -106,6 +103,8 @@ public class LocalEgaServiceImpl implements ResService {
         response.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         try {
             IOUtils.copyLarge(inputStream, outputStream);
+            outputStream.flush();
+            outputStream.close();
         } catch (IOException e) {
             Logger.getLogger(LocalEgaServiceImpl.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -116,8 +115,6 @@ public class LocalEgaServiceImpl implements ResService {
      */
     public InputStream getInputStream(Format sourceFormat,
                                       String sourceKeyId,
-                                      Format targetFormat,
-                                      String targetKeyId,
                                       String fileLocation,
                                       long startCoordinate,
                                       long endCoordinate) throws IOException,
@@ -129,9 +126,7 @@ public class LocalEgaServiceImpl implements ResService {
             NoSuchProviderException,
             InvalidKeyException,
             InvalidKeySpecException,
-            PGPException,
             DecoderException {
-
         SeekableStream seekableStream = seekableStreamFactory.getStreamFor(fileLocation);
         // TODO: WA for DataEdge that is not capable of passing source format here...
 //        if (Format.AES.equals(sourceFormat)) {
@@ -145,15 +140,22 @@ public class LocalEgaServiceImpl implements ResService {
         seekableStream = new SeekableAESCipherStream(seekableStream, Objects.requireNonNull(keyService.getRSAKeyById(sourceKeyId)));
 //        }
         seekableStream.seek(startCoordinate);
-        InputStream inputStream = endCoordinate != 0 && endCoordinate > startCoordinate ?
+        return endCoordinate != 0 && endCoordinate > startCoordinate ?
                 new BoundedInputStream(seekableStream, endCoordinate - startCoordinate) :
                 seekableStream;
+    }
+
+    private OutputStream getOutputStream(OutputStream outputStream,
+                                         String fileLocation,
+                                         Format targetFormat,
+                                         String targetKeyId) throws IOException, PGPException {
         if (Format.GPG_SYMMETRIC.equals(targetFormat)) {
-            inputStream = new GPGSymmetricCipherStream(inputStream, Objects.requireNonNull(targetKeyId), StringUtils.getFilename(fileLocation));
+            return new GPGSymmetricCipherOutputStream(outputStream, Objects.requireNonNull(targetKeyId), StringUtils.getFilename(fileLocation));
         } else if (Format.GPG_ASYMMETRIC.equals(targetFormat)) {
-            inputStream = new GPGAsymmetricCipherStream(inputStream, Objects.requireNonNull(keyService.getPGPPublicKeyById(targetKeyId)), StringUtils.getFilename(fileLocation));
+            return new GPGAsymmetricCipherOutputStream(outputStream, Objects.requireNonNull(keyService.getPGPPublicKeyById(targetKeyId)), StringUtils.getFilename(fileLocation));
+        } else {
+            return outputStream;
         }
-        return inputStream;
     }
 
 }
