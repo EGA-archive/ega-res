@@ -91,7 +91,7 @@ public class LocalEgaKeyServiceImplTest {
         whenNew(URL.class).withArguments(any()).thenReturn(urlMock);
         whenNew(Gson.class).withAnyArguments().thenReturn(gson);
         whenNew(PemReader.class).withAnyArguments().thenReturn(pemReader);
-        when(IOUtils.toString(inputStream, Charset.defaultCharset())).thenReturn("{2=100}");
+        when(IOUtils.toString(inputStream, Charset.defaultCharset())).thenReturn(valueRSAKey);
         when(gson.fromJson("{2=100}", HashMap.class)).thenReturn(test);
         when(urlMock.openStream()).thenReturn(inputStream);
         when(pemReader.readPemObject()).thenReturn(pemObject);
