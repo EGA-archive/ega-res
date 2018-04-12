@@ -20,6 +20,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.io.ByteStreams;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import eu.elixir.ega.ebi.reencryptionmvc.config.*;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
@@ -65,6 +66,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -121,7 +123,7 @@ public class CacheResServiceImpl implements ResService {
                          String sourceKey,
                          String destintionFormat,
                          String destinationKey,
-                         String destinationIV,
+                         String destinationIV,  // Base64 encoded
                          String fileLocation,
                          long startCoordinate,
                          long endCoordinate,
@@ -164,7 +166,9 @@ public class CacheResServiceImpl implements ResService {
             // Generate Encrypting OutputStream
             eOut = getTarget(encryptedDigestOut,
                     destintionFormat,
-                    destinationKey);
+                    destinationKey,
+                    destinationIV,
+                    startCoordinate);
             if (eOut == null) {
                 throw new GeneralStreamingException("Output Stream (ReEncryption Stage) Null", 2);
             }
@@ -178,6 +182,13 @@ public class CacheResServiceImpl implements ResService {
             }
             if (endCoordinate > fileSize)
                 endCoordinate = fileSize;
+            // Adjust start coordinate requested - to match 16 bute block structure
+            if (destintionFormat.toLowerCase().startsWith("aes") && 
+                    destinationIV!= null && destinationIV.length() > 0) {
+                long blockStart = (startCoordinate / 16) * 16;
+                int blockDelta = (int) (startCoordinate - blockStart);
+                startCoordinate -= blockDelta;
+            }
             long bytesToTransfer = fileSize - startCoordinate - (endCoordinate > 0 ? (fileSize - endCoordinate) : 0);
             long bytesTransferred = 0;
 
@@ -323,41 +334,49 @@ public class CacheResServiceImpl implements ResService {
     }
 
     // Return ReEncrypted Output Stream for Target
+    // This function also takes a specified IV as parameter, to produce a target 
+    // "random access" encrypting output stream, properly initialised 
 //    @HystrixCommand
     private OutputStream getTarget(OutputStream outStream,
                                    String destinationFormat,
-                                   String destinationKey) throws NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            InvalidAlgorithmParameterException,
-            IOException {
+                                   String destinationKey,
+                                   String destinationIV,
+                                   long startCoordinate) throws NoSuchAlgorithmException,
+                                                                NoSuchPaddingException,
+                                                                InvalidKeyException,
+                                                                InvalidAlgorithmParameterException,
+                                                                IOException {
         OutputStream out = null; // Return Stream - an Encrypted File
+        boolean IVSpecified = (destinationIV != null && destinationIV.length()>0);
 
         if (destinationFormat.equalsIgnoreCase("plain")) {
             out = outStream; // No Encryption Necessary
 
-        } else if (destinationFormat.equalsIgnoreCase("aes128")) {
-            SecretKey secret = Glue.getInstance().getKey(destinationKey.toCharArray(), 128);
+        } else if (destinationFormat.equalsIgnoreCase("aes128") ||
+                   destinationFormat.equalsIgnoreCase("aes256")) {
+            // Specify Encryption stength with specified key
+            int bits = 128;
+            if (destinationFormat.equalsIgnoreCase("aes256"))
+                bits = 256;
+            SecretKey secret = Glue.getInstance().getKey(destinationKey.toCharArray(), bits);
+            // Determine random IV - either random, or specified. Account for starting offset
             byte[] random_iv = new byte[16];
-            SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-            random.nextBytes(random_iv);
+            if (IVSpecified) {
+                byte[] dIV = Base64.decode(destinationIV);
+                System.arraycopy(dIV, 0, random_iv, 0, 16);
+                byte_increment_fast(random_iv, startCoordinate);
+            } else {
+                SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+                random.nextBytes(random_iv);
+            }
             AlgorithmParameterSpec paramSpec = new IvParameterSpec(random_iv);
-            outStream.write(random_iv);
+            // If the random IV was generated in here, write it to the output stream
+            if (!IVSpecified) 
+                    outStream.write(random_iv);
             Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding"); // load a cipher AES / Segmented Integer Counter
             cipher.init(Cipher.ENCRYPT_MODE, secret, paramSpec);
             out = new CipherOutputStream(outStream, cipher);
-
-        } else if (destinationFormat.equalsIgnoreCase("aes256")) {
-            SecretKey secret = Glue.getInstance().getKey(destinationKey.toCharArray(), 256);
-            byte[] random_iv = new byte[16];
-            SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-            random.nextBytes(random_iv);
-            AlgorithmParameterSpec paramSpec = new IvParameterSpec(random_iv);
-            outStream.write(random_iv);
-            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding"); // load a cipher AES / Segmented Integer Counter
-            cipher.init(Cipher.ENCRYPT_MODE, secret, paramSpec);
-            out = new CipherOutputStream(outStream, cipher);
-
+            
         } else if (destinationFormat.toLowerCase().startsWith("publicgpg")) {
             PGPPublicKey gpgKey = getPublicGPGKey(destinationFormat);
             out = new GPGOutputStream(outStream, gpgKey); // Public Key GPG
@@ -734,6 +753,45 @@ public class CacheResServiceImpl implements ResService {
             myHeaderCache.put(id, header);
         } catch (IOException ex) {
             throw new ServerErrorException("LoadHeader: " + ex.toString() + " :: ", url);
+        }
+    }
+
+    private static void byte_increment_fast(byte[] data, long increment) {
+        long countdown = increment / 16; // Count number of block updates
+
+        ArrayList<Integer> digits_ = new ArrayList<>();
+        int cnt = 0;
+        long d = 256, cn = 0;
+        while (countdown > cn && d > 0) {
+            int l = (int) ((countdown % d) / (d / 256));
+            digits_.add(l);
+            cn += (l * (d / 256));
+            d *= 256;
+        }
+        int size = digits_.size();
+        int[] digits = new int[size];
+        for (int i = 0; i < size; i++) {
+            digits[size - 1 - i] = digits_.get(i); // intValue()
+        }
+
+        int cur_pos = data.length - 1, carryover = 0, delta = data.length - digits.length;
+
+        for (int i = cur_pos; i >= delta; i--) { // Work on individual digits
+            int digit = digits[i - delta] + carryover; // convert to integer
+            int place = (int) (data[i] & 0xFF); // convert data[] to integer
+            int new_place = digit + place;
+            if (new_place >= 256) carryover = 1;
+            else carryover = 0;
+            data[i] = (byte) (new_place % 256);
+        }
+
+        // Deal with potential last carryovers
+        cur_pos -= digits.length;
+        while (carryover == 1 && cur_pos >= 0) {
+            data[cur_pos]++;
+            if (data[cur_pos] == 0) carryover = 1;
+            else carryover = 0;
+            cur_pos--;
         }
     }
 }
