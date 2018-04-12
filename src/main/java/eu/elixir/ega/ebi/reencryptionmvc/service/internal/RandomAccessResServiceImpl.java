@@ -71,7 +71,7 @@ import java.util.UUID;
  * @author asenf
  */
 @Service
-@Profile("!LocalEGA")
+@Profile("test")
 @EnableDiscoveryClient
 public class RandomAccessResServiceImpl implements ResService {
 
@@ -172,6 +172,7 @@ public class RandomAccessResServiceImpl implements ResService {
             encryptedDigestOut = new DigestOutputStream(outStream, encryptedDigest);
 
             // Generate Encrypting OutputStream
+System.out.println("Get Target");
             eOut = getTarget(encryptedDigestOut,
                     destinationFormat,
                     destinationKey);

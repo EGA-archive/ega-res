@@ -41,7 +41,7 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
  * @author asenf
  */
 @Service
-@Profile("default")
+@Profile({"default", "test"})
 @Primary
 @EnableDiscoveryClient
 public class CleversaveArchiveServiceImpl implements ArchiveService {
