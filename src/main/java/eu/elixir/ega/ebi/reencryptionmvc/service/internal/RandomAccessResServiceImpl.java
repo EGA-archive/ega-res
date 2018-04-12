@@ -42,7 +42,6 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Primary;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.stereotype.Service;
 
@@ -172,7 +171,6 @@ public class RandomAccessResServiceImpl implements ResService {
             encryptedDigestOut = new DigestOutputStream(outStream, encryptedDigest);
 
             // Generate Encrypting OutputStream
-System.out.println("Get Target");
             eOut = getTarget(encryptedDigestOut,
                     destinationFormat,
                     destinationKey);
@@ -188,7 +186,9 @@ System.out.println("Get Target");
 //            eValThread.start(); // Validation Thread
 
             // Copy the specified contents - decrypting through input, encrypting through output
-            bytes = EgaByteStreams.copy(plainDigestIn, eOut, 65535); // mOut <-- for validation
+            InputStream in_ = null;
+            in_ = ByteStreams.limit(plainDigestIn, fileSize);
+            bytes = EgaByteStreams.copy(in_, eOut, 65535); // mOut <-- for validation
             //bytes = ByteStreams.copy(plainDigestIn, eOut); // mOut <-- for validation
             System.out.println("Copied Bytes: " + bytes);
 
@@ -280,8 +280,8 @@ System.out.println("Get Target");
             } else if (sourceFormat.equalsIgnoreCase("aes128")) {
                 plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 128);
             } else if (sourceFormat.equalsIgnoreCase("aes256")) {
-                //plainIn = new EgaSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
-                plainIn = new RemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
+                plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
+                //plainIn = new RemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
             } else if (sourceFormat.equalsIgnoreCase("symmetricgpg")) {
                 plainIn = getSymmetricGPGDecryptingInputStream(fileIn, sourceKey);
             } else if (sourceFormat.toLowerCase().startsWith("publicgpg")) {
