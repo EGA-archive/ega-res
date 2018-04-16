@@ -130,13 +130,17 @@ public class RandomAccessResServiceImpl implements ResService {
         try {
             // Build Plain (Decrypting) Input Stream from Source, seek and wrap it in MD5 stream
             SeekableStream cIn;
-            cIn = getSource(sourceFormat,
-                    sourceKey,
-                    fileLocation,
-                    httpAuth,
-                    fileSize);
-            if (cIn == null) {
-                throw new GeneralStreamingException("Input Stream (Decryption Stage) Null", 1);
+            try {
+                cIn = getSource(sourceFormat,
+                        sourceKey,
+                        fileLocation,
+                        httpAuth,
+                        fileSize);
+                if (cIn == null) {
+                    throw new GeneralStreamingException("Input Stream (Decryption Stage) Null", 1);
+                }
+            } catch (NullPointerException nex) {
+                throw new GeneralStreamingException(nex.toString(), 10);                
             }
             // Handle start coordinate - seek input stream to specified position
             if (startCoordinate > 0) {
@@ -171,11 +175,15 @@ public class RandomAccessResServiceImpl implements ResService {
             encryptedDigestOut = new DigestOutputStream(outStream, encryptedDigest);
 
             // Generate Encrypting OutputStream
-            eOut = getTarget(encryptedDigestOut,
-                    destinationFormat,
-                    destinationKey);
-            if (eOut == null) {
-                throw new GeneralStreamingException("Output Stream (ReEncryption Stage) Null", 2);
+            try {
+                eOut = getTarget(encryptedDigestOut,
+                        destinationFormat,
+                        destinationKey);
+                if (eOut == null) {
+                    throw new GeneralStreamingException("Output Stream (ReEncryption Stage) Null", 2);
+                }
+            } catch (NullPointerException nex) {
+                throw new GeneralStreamingException(nex.toString(), 20);                
             }
 
             // Experimental: Add Multiple Output objects and perform Validation in one of them
