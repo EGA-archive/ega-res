@@ -220,13 +220,13 @@ public class RandomAccessResServiceImpl implements ResService {
                 }
 
                 // Store with UUID for later retrieval
-                Transfer transfer = new Transfer(headerValue,
-                        new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()),
-                        plainHashtext,
-                        encryptedHashtext,
-                        0,
-                        bytes,
-                        "RES");
+            //    Transfer transfer = new Transfer(headerValue,
+            //            new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()),
+            //            plainHashtext,
+            //            encryptedHashtext,
+            //            0,
+            //            bytes,
+            //            "RES");
                 //Transfer save = transferRepository.save(transfer);
 
             } catch (Exception ex) {
