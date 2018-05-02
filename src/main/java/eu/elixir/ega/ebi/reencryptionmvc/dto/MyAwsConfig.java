@@ -28,4 +28,6 @@ import lombok.NoArgsConstructor;
 public class MyAwsConfig {
     private String awsAccessKeyId;
     private String awsSecretAccessKey;
+    private String awsEndpointUrl;
+    private String awsRegion;
 }

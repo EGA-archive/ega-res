@@ -15,8 +15,9 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.config;
 
-import com.google.common.cache.CacheBuilder;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.*;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 import org.cache2k.Cache;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -29,8 +30,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import com.google.common.cache.CacheBuilder;
+
+import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.MyArchiveConfig;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.MyAwsConfig;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.MyFireConfig;
 
 /**
  * @author asenf
@@ -51,6 +57,10 @@ public class MyConfiguration {
     String awsKey;
     @Value("${ega.ebi.aws.access.secret}")
     String awsSecretKey;
+    @Value("${ega.ebi.aws.endpoint.url}")
+    String awsEndpointUrl;
+    @Value("${ega.ebi.aws.endpoint.region}")
+    String awsRegion;
 
     @Value("${service.archive.class}")
     String archiveImplBean;
@@ -75,7 +85,7 @@ public class MyConfiguration {
     @Bean
     public MyAwsConfig MyAwsCipherConfig() {
         return new MyAwsConfig(awsKey,
-                awsSecretKey);
+                awsSecretKey, awsEndpointUrl, awsRegion);
     }
 
     @Bean
