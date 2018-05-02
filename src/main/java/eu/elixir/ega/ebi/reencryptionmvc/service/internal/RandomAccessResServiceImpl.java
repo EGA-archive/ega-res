@@ -15,35 +15,32 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.google.common.io.ByteStreams;
-import eu.elixir.ega.ebi.reencryptionmvc.config.GeneralStreamingException;
-import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
-import eu.elixir.ega.ebi.reencryptionmvc.dto.MyAwsConfig;
-import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
-import eu.elixir.ega.ebi.reencryptionmvc.service.ResService;
-import eu.elixir.ega.ebi.reencryptionmvc.util.validation.EgaByteStreams;
-import htsjdk.samtools.seekablestream.FakeSeekableStream;
-import htsjdk.samtools.seekablestream.SeekableHTTPStream;
-import htsjdk.samtools.seekablestream.SeekablePathStream;
-import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.seekablestream.cipher.ebi.*;
-import htsjdk.samtools.seekablestream.ebi.AsyncBufferedSeekableHTTPStream;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openpgp.*;
-import org.bouncycastle.openpgp.operator.KeyFingerPrintCalculator;
-import org.bouncycastle.openpgp.operator.PBESecretKeyDecryptor;
-import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
-import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyDecryptorBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.stereotype.Service;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.DigestInputStream;
+import java.security.DigestOutputStream;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
@@ -52,18 +49,56 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.math.BigInteger;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.*;
-import java.security.spec.AlgorithmParameterSpec;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.UUID;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.PGPCompressedData;
+import org.bouncycastle.openpgp.PGPEncryptedDataList;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPLiteralData;
+import org.bouncycastle.openpgp.PGPObjectFactory;
+import org.bouncycastle.openpgp.PGPPrivateKey;
+import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
+import org.bouncycastle.openpgp.PGPSecretKey;
+import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
+import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.KeyFingerPrintCalculator;
+import org.bouncycastle.openpgp.operator.PBESecretKeyDecryptor;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.bc.BcPBESecretKeyDecryptorBuilder;
+import org.bouncycastle.openpgp.operator.bc.BcPGPDigestCalculatorProvider;
+import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.io.ByteStreams;
+
+import eu.elixir.ega.ebi.reencryptionmvc.config.GeneralStreamingException;
+import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.MyAwsConfig;
+import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
+import eu.elixir.ega.ebi.reencryptionmvc.service.ResService;
+import eu.elixir.ega.ebi.reencryptionmvc.util.validation.EgaByteStreams;
+import htsjdk.samtools.seekablestream.FakeSeekableStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.cipher.ebi.GPGOutputStream;
+import htsjdk.samtools.seekablestream.cipher.ebi.GPGStream;
+import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
+import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
+import htsjdk.samtools.seekablestream.ebi.AsyncBufferedSeekableHTTPStream;
 
 
 /**
@@ -267,15 +302,26 @@ public class RandomAccessResServiceImpl implements ResService {
                 fileIn = httpAuth == null ? new AsyncBufferedSeekableHTTPStream(url) :
                         new AsyncBufferedSeekableHTTPStream(url, null, httpAuth, fileSize);
                 /** end cache code **/
-            } else if (fileLocation.toLowerCase().startsWith("s3")) { // S3
-                String awsPath = fileLocation.substring(23); // Strip "S3://"
-                String bucket = fileLocation.substring(5, 20);
-                AWSCredentials credentials = new BasicAWSCredentials(myAwsConfig.getAwsAccessKeyId(), myAwsConfig.getAwsSecretAccessKey());
-                AmazonS3 s3 = new AmazonS3Client(credentials);
-                //S3Object object = s3.getObject(bucket, awsPath);
-                //fileIn = new EgaFakeSeekableStream(object.getObjectContent()); // ??                
-                URL url = s3.getUrl(bucket, awsPath);
-                fileIn = new SeekableHTTPStream(url);
+            } else if (fileLocation.toLowerCase().startsWith("s3")) { 
+                
+                /*
+                 * e.g, String fileLocation = "s3://elixir-excelerate/test.txt.cip";
+                 *      String bucket = "test.txt.cip" ;
+                 *      String awsPath = "elixir-excelerate" ;
+                 */
+                
+                final String bucket = fileLocation.substring(5, fileLocation.indexOf("/", 5));
+                final String awsPath = fileLocation.substring(fileLocation.indexOf("/", 5) + 1);
+                
+                final AWSCredentials credentials = new BasicAWSCredentials(myAwsConfig.getAwsAccessKeyId(),
+                        myAwsConfig.getAwsSecretAccessKey());
+                final AmazonS3 s3 = AmazonS3ClientBuilder.standard()
+                        .withCredentials(new AWSStaticCredentialsProvider(credentials)).withPathStyleAccessEnabled(true)
+                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(myAwsConfig.getAwsEndpointUrl(), myAwsConfig.getAwsRegion()))
+                        .build();
+                
+                final S3Object s3object = s3.getObject(new GetObjectRequest(bucket, awsPath));
+                fileIn = new FakeSeekableStream(s3object.getObjectContent());       
             } else { // No Protocol -- Assume File Path
                 fileLocation = "file://" + fileLocation;
                 Path filePath = Paths.get(new URI(fileLocation));
