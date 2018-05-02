@@ -306,8 +306,8 @@ public class RandomAccessResServiceImpl implements ResService {
                 
                 /*
                  * e.g, String fileLocation = "s3://elixir-excelerate/test.txt.cip";
-                 *      String bucket = "test.txt.cip" ;
-                 *      String awsPath = "elixir-excelerate" ;
+                 *      String bucket = "elixir-excelerate" ;
+                 *      String awsPath = "test.txt.cip" ;
                  */
                 
                 final String bucket = fileLocation.substring(5, fileLocation.indexOf("/", 5));
