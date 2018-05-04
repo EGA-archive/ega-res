@@ -15,6 +15,8 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
+import static com.amazonaws.HttpMethod.GET;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -41,7 +43,10 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -90,8 +95,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.google.common.io.ByteStreams;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
@@ -116,8 +120,6 @@ import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.BufferedBackgroundSeekableInputStream;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -367,8 +369,15 @@ public class CacheResServiceImpl implements ResService {
                         .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(myAwsConfig.getAwsEndpointUrl(), myAwsConfig.getAwsRegion()))
                         .build();
                 
-                final S3Object s3object = s3.getObject(new GetObjectRequest(bucket, awsPath));
-                fileIn = new FakeSeekableStream(s3object.getObjectContent());  
+                Date expiration = new Date();
+                long expTimeMillis = expiration.getTime();
+                expTimeMillis += (1000 * 3600) * 24 ;
+                expiration.setTime(expTimeMillis);
+                
+                GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, awsPath).withMethod(GET)
+                        .withExpiration(expiration);
+                URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);        
+                fileIn = new SeekableHTTPStream(url);
             } else { // No Protocol -- Assume File Path
                 fileLocation = "file://" + fileLocation;
                 Path filePath = Paths.get(new URI(fileLocation));
