@@ -71,6 +71,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
 
     private final String awsAccessKeyId;
     private final String awsSecretAccessKey;
+    private final String awsEndpointUrl;
+    private final String awsRegion;
 
     private final String fireUrl;
     private final String fireArchive;
@@ -87,6 +89,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
                          String fireUrl,
                          String fireArchive,
                          String fireKey,
+                         String awsEndpointUrl,
+                         String awsRegion,
                          String eurekaUrl) throws Exception {
 
         this.pageSize = pageSize;
@@ -96,6 +100,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
 
         this.awsAccessKeyId = awsAccessKeyId;
         this.awsSecretAccessKey = awsSecretAccessKey;
+        this.awsEndpointUrl = awsEndpointUrl;
+        this.awsRegion = awsRegion;
 
         this.fireUrl = fireUrl;
         this.fireArchive = fireArchive;
@@ -148,8 +154,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
                 .refreshAhead(false)                      // keep fresh when expiring
                 .loader(this::loadPage)                   // auto populating function
                 .keepDataAfterExpired(false)
-                .loaderExecutor(Executors.newFixedThreadPool(128))
-                .loaderThreadCount(64)
+                .loaderExecutor(Executors.newFixedThreadPool(1280))
+                .loaderThreadCount(640)
                 .entryCapacity(800)
                 .build();
     }

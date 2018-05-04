@@ -116,6 +116,8 @@ import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.BufferedBackgroundSeekableInputStream;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -145,15 +147,18 @@ public class CacheResServiceImpl implements ResService {
     /**
      * Background processing
      */
-    ExecutorService executorService2 = Executors.newFixedThreadPool(100);
+    ExecutorService executorService2 = Executors.newFixedThreadPool(200);
 
     /**
      * Size of a byte buffer to read/write file (for Random Stream)
      */
     //private static final int BUFFER_SIZE = 16;
     private static final long BUFFER_SIZE = 1024 * 1024 * 12;
-    private static final int MAX_CONCURRENT = 5;
+    private static final int MAX_CONCURRENT = 4;
 
+    private static ConcurrentHashMap loadQueue = new ConcurrentHashMap<>(); 
+    private static Set concurrentHashSet = loadQueue.newKeySet();
+    
     /**
      * Bouncy Castle code for Public Key encrypted Files
      */
@@ -267,12 +272,17 @@ public class CacheResServiceImpl implements ResService {
                 for (int prefetch = 1; prefetch <= MAX_CONCURRENT; prefetch++) {
                     if ((cachePage + prefetch) < cacheEndPage) { // no paged past end of file
                         final String key__ = id + "_" + (cachePage + prefetch);
-                        Executors.newSingleThreadExecutor().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                byte[] page = myPageCache.get(key__).getPage();
-                            }
-                        });
+                        if (!myPageCache.containsKey(key__) && !concurrentHashSet.contains(key__)) {
+                            concurrentHashSet.add(key__);
+                            //Executors.newSingleThreadExecutor().execute(new Runnable() {
+                            Executors.newCachedThreadPool().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    byte[] page = myPageCache.get(key__).getPage();
+                                    concurrentHashSet.remove(key__);
+                                }
+                            });
+                        }
                     }
                 }
 

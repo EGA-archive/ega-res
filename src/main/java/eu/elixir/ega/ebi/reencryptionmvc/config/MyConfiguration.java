@@ -111,6 +111,8 @@ public class MyConfiguration {
                 fireUrl,
                 fireArchive,
                 fireKey,
+                awsEndpointUrl,
+                awsRegion,
                 eurekaUrl)).getObject();
     }
 
