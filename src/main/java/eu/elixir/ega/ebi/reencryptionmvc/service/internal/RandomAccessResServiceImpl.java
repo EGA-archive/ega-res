@@ -100,6 +100,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.GPGOutputStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.GPGStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
+import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.AsyncBufferedSeekableHTTPStream;
 
@@ -344,8 +345,8 @@ public class RandomAccessResServiceImpl implements ResService {
             } else if (sourceFormat.equalsIgnoreCase("aes128")) {
                 plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 128);
             } else if (sourceFormat.equalsIgnoreCase("aes256")) {
-                plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
-                //plainIn = new RemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
+                //plainIn = new SeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
+                plainIn = new RemoteSeekableCipherStream(fileIn, sourceKey.toCharArray(), BUFFER_SIZE, 256);
             } else if (sourceFormat.equalsIgnoreCase("symmetricgpg")) {
                 plainIn = getSymmetricGPGDecryptingInputStream(fileIn, sourceKey);
             } else if (sourceFormat.toLowerCase().startsWith("publicgpg")) {
