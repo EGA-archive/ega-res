@@ -97,7 +97,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.google.common.io.ByteStreams;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+//import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import eu.elixir.ega.ebi.reencryptionmvc.config.GeneralStreamingException;
 import eu.elixir.ega.ebi.reencryptionmvc.config.ObjectLoaderAES;
@@ -120,6 +120,8 @@ import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.BufferedBackgroundSeekableInputStream;
+import java.util.Arrays;
+//import java.util.Base64;
 
 
 /**
@@ -435,7 +437,8 @@ public class CacheResServiceImpl implements ResService {
             // Determine random IV - either random, or specified. Account for starting offset
             byte[] random_iv = new byte[16];
             if (IVSpecified) {
-                byte[] dIV = Base64.decode(destinationIV);
+                //byte[] dIV = Base64.decode(destinationIV);
+                byte[] dIV = java.util.Base64.getDecoder().decode(destinationIV);
                 System.arraycopy(dIV, 0, random_iv, 0, 16);
                 byte_increment_fast(random_iv, startCoordinate);
             } else {
@@ -793,8 +796,9 @@ public class CacheResServiceImpl implements ResService {
 
         if (httpAuth != null && httpAuth.length() > 0) { // Old: http Auth
 //            close = true;
-            String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
-            encoding = encoding.replaceAll("\n", "");
+            //String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
+            //encoding = encoding.replaceAll("\n", "");
+            String encoding = java.util.Base64.getEncoder().encodeToString(httpAuth.getBytes());
             String auth = "Basic " + encoding;
             request.addHeader("Authorization", auth);
         } else if (!url.contains("X-Amz")) {        // Not an S3 URL - Basic Auth embedded with URL
@@ -802,8 +806,9 @@ public class CacheResServiceImpl implements ResService {
             try {
                 URL url_ = new URL(url);
                 if (url_.getUserInfo() != null) {
-                    String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
-                    encoding = encoding.replaceAll("\n", "");
+                    //String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
+                    //encoding = encoding.replaceAll("\n", "");
+                    String encoding = java.util.Base64.getEncoder().encodeToString(url_.getUserInfo().getBytes());
                     String auth = "Basic " + encoding;
                     request.addHeader("Authorization", auth);
                 }

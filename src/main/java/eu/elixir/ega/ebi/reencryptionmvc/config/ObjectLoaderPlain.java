@@ -90,12 +90,14 @@ public class ObjectLoaderPlain implements Runnable {
         } catch (MalformedURLException ex) {
         }
         if (url_ != null && url_.getUserInfo() != null) {
-            String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
-            encoding = encoding.replaceAll("\n", "");
+            //String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
+            //encoding = encoding.replaceAll("\n", "");
+            String encoding = java.util.Base64.getEncoder().encodeToString(url_.getUserInfo().getBytes());
             this.auth = "Basic " + encoding;
         } else if (auth != null && auth.length() > 0) {
-            String encoding = new sun.misc.BASE64Encoder().encode(auth.getBytes());
-            encoding = encoding.replaceAll("\n", "");
+            //String encoding = new sun.misc.BASE64Encoder().encode(auth.getBytes());
+            //encoding = encoding.replaceAll("\n", "");
+            String encoding = java.util.Base64.getEncoder().encodeToString(auth.getBytes());
             this.auth = "Basic " + encoding;
         } else {
             this.auth = null;

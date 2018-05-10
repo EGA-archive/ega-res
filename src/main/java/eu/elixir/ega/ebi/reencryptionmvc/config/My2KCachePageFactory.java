@@ -321,8 +321,9 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
 
         if (httpAuth != null && httpAuth.length() > 0) { // Old: http Auth
             close = true;
-            String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
-            encoding = encoding.replaceAll("\n", "");
+            //String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
+            //encoding = encoding.replaceAll("\n", "");
+            String encoding = java.util.Base64.getEncoder().encodeToString(httpAuth.getBytes());
             String auth = "Basic " + encoding;
             request.addHeader("Authorization", auth);
         } else if (!url.contains("X-Amz")) {        // Not an S3 URL - Basic Auth embedded with URL
@@ -330,8 +331,9 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
             try {
                 URL url_ = new URL(url);
                 if (url_.getUserInfo() != null) {
-                    String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
-                    encoding = encoding.replaceAll("\n", "");
+                    //String encoding = new sun.misc.BASE64Encoder().encode(url_.getUserInfo().getBytes());
+                    //encoding = encoding.replaceAll("\n", "");
+                    String encoding = java.util.Base64.getEncoder().encodeToString(url_.getUserInfo().getBytes());
                     String auth = "Basic " + encoding;
                     request.addHeader("Authorization", auth);
                 }
