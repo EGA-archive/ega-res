@@ -104,8 +104,10 @@ public class MyConfiguration {
     //}
     @Bean
     public Cache<String, CachePage> myPageCache() throws Exception {
-        int pagesize = 1024 * 1024 * 12;
+        int pagesize = 1024 * 1024 * 12;    // 12 MB Page Size
+        int pageCount = 1200;               // 1200 * 12 = 14 GB Cache Size
         return (new My2KCachePageFactory(pagesize,
+                pageCount,
                 awsKey,
                 awsSecretKey,
                 fireUrl,
