@@ -150,8 +150,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
     public Cache<String, CachePage> getObject() throws Exception {
         return new Cache2kBuilder<String, CachePage>() {
         }
-                .expireAfterWrite(10, TimeUnit.MINUTES)    // expire/refresh after 5 minutes
-                .resilienceDuration(45, TimeUnit.SECONDS) // cope with at most 30 seconds
+                .expireAfterWrite(10, TimeUnit.MINUTES)    // expire/refresh after 10 minutes
+                .resilienceDuration(45, TimeUnit.SECONDS) // cope with at most 45 seconds
                 // outage before propagating
                 // exceptions
                 .refreshAhead(false)                      // keep fresh when expiring

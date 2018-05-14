@@ -120,8 +120,6 @@ import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.BufferedBackgroundSeekableInputStream;
-import java.util.Arrays;
-//import java.util.Base64;
 
 
 /**

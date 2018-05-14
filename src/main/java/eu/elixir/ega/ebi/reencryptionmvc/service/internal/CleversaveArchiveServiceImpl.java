@@ -64,10 +64,7 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
     public ArchiveSource getArchiveFile(String id, HttpServletResponse response) {
 
         // Get Filename from EgaFile ID - via DATA service (potentially multiple files)
-System.out.println("--------------------" + SERVICE_URL + "/file/" + id);
         ResponseEntity<EgaFile[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", EgaFile[].class, id);
-System.out.println("--------------------" + "Response: " + forEntity.getStatusCodeValue());
-System.out.println("--------------------" + "Response_: " + forEntity.toString());
         response.setStatus(forEntity.getStatusCodeValue());
         if (forEntity.getStatusCode() != HttpStatus.OK) return null;
 
