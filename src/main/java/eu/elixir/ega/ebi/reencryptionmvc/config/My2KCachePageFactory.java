@@ -65,6 +65,7 @@ import java.util.logging.Logger;
  */
 public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage>> { //extends SimpleJdbcDaoSupport
     private final int pageSize;
+    private final int pageCount;
     private final Cache<String, EgaAESFileHeader> myHeaderCache;
 
     private final HttpClient httpclient;
@@ -84,6 +85,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
     private final ArrayList<String> keyUrls;
 
     My2KCachePageFactory(int pageSize,
+                         int pageCount,
                          String awsAccessKeyId,
                          String awsSecretAccessKey,
                          String fireUrl,
@@ -94,6 +96,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
                          String eurekaUrl) throws Exception {
 
         this.pageSize = pageSize;
+        this.pageCount = pageCount;
         this.myHeaderCache = (new My2KCacheFactory()).getObject(); //myCache;
 
         this.httpclient = HttpClientBuilder.create().build();
@@ -156,7 +159,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
                 .keepDataAfterExpired(false)
                 .loaderExecutor(Executors.newFixedThreadPool(1280))
                 .loaderThreadCount(640)
-                .entryCapacity(800)
+                .entryCapacity(this.pageCount)
                 .build();
     }
 
