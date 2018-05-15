@@ -23,6 +23,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import org.cache2k.Cache;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import eu.elixir.ega.ebi.reencryptionmvc.domain.entity.Transfer;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.service.SessionService;
 
 /**
@@ -51,6 +53,9 @@ public class SessionControllerTest {
 
     @MockBean
     private SessionService sessionService;
+    
+    @MockBean
+    private Cache<String, CachePage> myPageCache;
 
     /**
      * Test {@link SessionController#get(String)}. Verify the api call returns

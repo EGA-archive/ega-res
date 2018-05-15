@@ -21,14 +21,18 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import org.cache2k.Cache;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+
+import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 
 /**
  * Test class for {@link StatsController}.
@@ -42,6 +46,9 @@ public class StatsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    
+    @MockBean
+    private Cache<String, CachePage> myPageCache;
 
     /**
      * Test {@link StatsController#get()}. Verify the api call returns status is OK.
