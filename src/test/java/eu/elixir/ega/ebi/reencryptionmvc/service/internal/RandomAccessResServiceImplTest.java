@@ -44,6 +44,7 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 import eu.elixir.ega.ebi.reencryptionmvc.util.validation.EgaByteStreams;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
+import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 
 /**
  * Test class for {@link RandomAccessResServiceImpl}.
@@ -99,6 +100,7 @@ public class RandomAccessResServiceImplTest {
         final Paths pathsMock = mock(Paths.class);
         final Path pathMock = mock(Path.class);
         final SeekablePathStream seekablePathStream = mock(SeekablePathStream.class);
+        final SeekableCipherStream seekableCipherStream = mock(SeekableCipherStream.class);
         final RemoteSeekableCipherStream remoteSeekableCipherStream = mock(RemoteSeekableCipherStream.class);
 
         mockStatic(HttpClientBuilder.class);
@@ -106,6 +108,7 @@ public class RandomAccessResServiceImplTest {
         mockStatic(EgaByteStreams.class);
         whenNew(Paths.class).withAnyArguments().thenReturn(pathsMock);
         whenNew(SeekablePathStream.class).withAnyArguments().thenReturn(seekablePathStream);
+        whenNew(SeekableCipherStream.class).withAnyArguments().thenReturn(seekableCipherStream);
         whenNew(RemoteSeekableCipherStream.class).withAnyArguments().thenReturn(remoteSeekableCipherStream);
         when(Paths.get(any())).thenReturn(pathMock);
         when(keyService.getKeyPath(any(String.class))).thenReturn(keyPaths);

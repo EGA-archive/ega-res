@@ -15,12 +15,52 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.config;
 
+import static com.amazonaws.HttpMethod.GET;
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.cache2k.Cache;
+import org.cache2k.Cache2kBuilder;
+import org.springframework.beans.factory.FactoryBean;
+
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.google.common.io.CountingInputStream;
 import com.google.gson.Gson;
+
 import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
@@ -33,32 +73,6 @@ import htsjdk.samtools.seekablestream.cipher.ebi.Glue;
 import htsjdk.samtools.seekablestream.cipher.ebi.RemoteSeekableCipherStream;
 import htsjdk.samtools.seekablestream.cipher.ebi.SeekableCipherStream;
 import htsjdk.samtools.seekablestream.ebi.AsyncBufferedSeekableHTTPStream;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.cache2k.Cache;
-import org.cache2k.Cache2kBuilder;
-import org.springframework.beans.factory.FactoryBean;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author asenf
@@ -313,10 +327,16 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
     }
 
     private void loadHeaderCleversafe(String id, String path, String httpAuth, long fileSize, String sourceKey) {
-        boolean close = false;
-        String path_ = path.toLowerCase().startsWith("/fire/a/") ? path.substring(16) : path;
-        String[] url__ = getPath(path_);
-        String url = url__[0];
+        boolean close = false;        
+        String url = "";
+        
+        if (path.startsWith("s3")) {
+            url = getS3ObjectUrl(id, path, httpAuth, fileSize, sourceKey);
+        } else {
+            String path_ = path.toLowerCase().startsWith("/fire/a/") ? path.substring(16) : path;
+            String[] url__ = getPath(path_);
+            url = url__[0];
+        }
 
         // Load first 16 bytes; set stats
         HttpClient httpclient = HttpClientBuilder.create().build();
@@ -356,6 +376,36 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
         } catch (IOException ex) {
             Logger.getLogger(CacheResServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private String getS3ObjectUrl(String id, String fileLocation, String httpAuth,
+            long fileSize, String sourceKey) {
+        
+        System.out.println("Inside load loadHeaders3 - 2"+ awsEndpointUrl + "=="+ awsRegion);
+        boolean close = false;
+        SeekableStream fileIn ;  
+        // Load first 16 bytes; set stats
+        
+
+        final String bucket = fileLocation.substring(5, fileLocation.indexOf("/", 5));
+        final String awsPath = fileLocation.substring(fileLocation.indexOf("/", 5) + 1);
+        
+        final AWSCredentials credentials = new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
+        final AmazonS3 s3 = AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials)).withPathStyleAccessEnabled(true)
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(awsEndpointUrl, awsRegion))
+                .build();
+        
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += (1000 * 3600) * 24 ;
+        expiration.setTime(expTimeMillis);
+        
+        GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, awsPath).withMethod(GET)
+                .withExpiration(expiration);
+        URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);
+        
+        return url.toString();
     }
 
     /*

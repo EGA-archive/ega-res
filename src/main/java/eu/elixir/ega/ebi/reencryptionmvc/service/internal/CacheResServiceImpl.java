@@ -353,30 +353,7 @@ public class CacheResServiceImpl implements ResService {
                 URL url = new URL(fileLocation);
                 fileIn = httpAuth == null ? new SeekableHTTPStream(url) : new SeekableBasicAuthHTTPStream(url, httpAuth);
             } else if (fileLocation.toLowerCase().startsWith("s3")) { // S3
-                /*
-                 * e.g, String fileLocation = "s3://elixir-excelerate/test.txt.cip";
-                 *      String bucket = "elixir-excelerate" ;
-                 *      String awsPath = "test.txt.cip" ;
-                 */
-                
-                final String bucket = fileLocation.substring(5, fileLocation.indexOf("/", 5));
-                final String awsPath = fileLocation.substring(fileLocation.indexOf("/", 5) + 1);
-                
-                final AWSCredentials credentials = new BasicAWSCredentials(myAwsConfig.getAwsAccessKeyId(),
-                        myAwsConfig.getAwsSecretAccessKey());
-                final AmazonS3 s3 = AmazonS3ClientBuilder.standard()
-                        .withCredentials(new AWSStaticCredentialsProvider(credentials)).withPathStyleAccessEnabled(true)
-                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(myAwsConfig.getAwsEndpointUrl(), myAwsConfig.getAwsRegion()))
-                        .build();
-                
-                Date expiration = new Date();
-                long expTimeMillis = expiration.getTime();
-                expTimeMillis += (1000 * 3600) * 24 ;
-                expiration.setTime(expTimeMillis);
-                
-                GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, awsPath).withMethod(GET)
-                        .withExpiration(expiration);
-                URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);        
+                URL url = new URL(getS3ObjectUrl(fileLocation));        
                 fileIn = new SeekableHTTPStream(url);
             } else { // No Protocol -- Assume File Path
                 fileLocation = "file://" + fileLocation;
@@ -788,6 +765,10 @@ public class CacheResServiceImpl implements ResService {
                                       long fileSize, HttpServletResponse response_, String sourceKey) {
         boolean close = false;
 
+        if (url.startsWith("s3")) {
+            url = getS3ObjectUrl(url);
+        }
+        
         // Load first 16 bytes; set stats
         HttpClient httpclient = HttpClientBuilder.create().build();
         HttpGet request = new HttpGet(url);
@@ -812,7 +793,7 @@ public class CacheResServiceImpl implements ResService {
                 }
             } catch (MalformedURLException ex) {
             }
-        }                                           // S3 URL: Use as it is given!
+        }  
 
         byte[] IV = new byte[16];
         try {
@@ -830,6 +811,28 @@ public class CacheResServiceImpl implements ResService {
         } catch (IOException ex) {
             throw new ServerErrorException("LoadHeader: " + ex.toString() + " :: ", url);
         }
+    }
+    
+    private String getS3ObjectUrl(String fileLocation) {
+        final String bucket = fileLocation.substring(5, fileLocation.indexOf("/", 5));
+        final String awsPath = fileLocation.substring(fileLocation.indexOf("/", 5) + 1);
+        
+        final AWSCredentials credentials = new BasicAWSCredentials(myAwsConfig.getAwsAccessKeyId(),
+                myAwsConfig.getAwsSecretAccessKey());
+        final AmazonS3 s3 = AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials)).withPathStyleAccessEnabled(true)
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(myAwsConfig.getAwsEndpointUrl(), myAwsConfig.getAwsRegion()))
+                .build();
+        
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += (1000 * 3600) * 24 ;
+        expiration.setTime(expTimeMillis);
+        
+        GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, awsPath).withMethod(GET)
+                .withExpiration(expiration);
+        URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);
+        return url.toString();
     }
 
     private static void byte_increment_fast(byte[] data, long increment) {
