@@ -29,7 +29,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -328,16 +327,14 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
     }
 
     private void loadHeaderCleversafe(String id, String path, String httpAuth, long fileSize, String sourceKey) {
-        boolean close = false;
-        String path_ = "";
-        String[] url__;
+        boolean close = false;        
         String url = "";
         
         if (path.startsWith("s3")) {
             url = getS3ObjectUrl(id, path, httpAuth, fileSize, sourceKey);
         } else {
-            path_ = path.toLowerCase().startsWith("/fire/a/") ? path.substring(16) : path;
-            url__ = getPath(path_);
+            String path_ = path.toLowerCase().startsWith("/fire/a/") ? path.substring(16) : path;
+            String[] url__ = getPath(path_);
             url = url__[0];
         }
 
