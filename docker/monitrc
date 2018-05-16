@@ -1,0 +1,21 @@
+#
+# Monit control file
+#
+
+set daemon 30 # Poll at 1/2-minute intervals
+set logfile /monitapi.log
+set idfile /tmp/id
+set statefile /tmp/state
+set httpd port 8103
+   allow ega:egalocal
+   
+
+#
+# Process
+#
+
+check process resd_docker with matching "ega-res-0.0.1-SNAPSHOT.jar"
+   group service_process
+   start program = "/etc/resd.sh start"
+   stop program = "/etc/resd.sh stop"
+   if not exist then start
