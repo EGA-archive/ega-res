@@ -10,14 +10,21 @@ RUN apt-get update
 RUN apt-get install -y software-properties-common python-software-properties
 RUN add-apt-repository ppa:openjdk-r/ppa
 RUN apt-get update
-RUN apt-get -y install openjdk-8-jdk
-ADD ReEncryptionMVC-0.0.1-SNAPSHOT.jar /ReEncryptionMVC-0.0.1-SNAPSHOT.jar
+RUN apt-get -y install openjdk-8-jdk monit
+ADD ega-res-0.0.1-SNAPSHOT.jar /ega-res-0.0.1-SNAPSHOT.jar
 RUN mkdir /etc/service/ega_v3_res_mvc
 ADD resd.sh /etc/service/ega_v3_res_mvc/run
 RUN chmod +x /etc/service/ega_v3_res_mvc/run
+ADD resd.sh /etc/resd.sh
+RUN chmod +x /etc/resd.sh
+ADD monitrc /etc/monitrc
+RUN chmod 700 /etc/monitrc
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Startup
+CMD monit -d 10 -Ic /etc/monitrc
+
 # Port
-EXPOSE 9090
+EXPOSE 9090 8103
