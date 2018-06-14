@@ -41,12 +41,11 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
  * @author asenf
  */
 @Service
-@Profile("default")
+@Profile("test")
 @Primary
 @EnableDiscoveryClient
-public class CleversaveArchiveServiceImpl implements ArchiveService {
+public class FileArchiveServiceImpl implements ArchiveService {
 
-    //private final String SERVICE_URL = "http://DATA";
     private final String SERVICE_URL = "http://DOWNLOADER";
 
     @Autowired
@@ -59,7 +58,7 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
     private ArchiveAdapterService archiveAdapterService;
 
     @Override
-//    @Retryable(maxAttempts = 4, backoff = @Backoff(delay = 2000, multiplier = 2))
+    @Retryable(maxAttempts = 8, backoff = @Backoff(delay = 2000, multiplier = 2))
     @Cacheable(cacheNames = "archive")
     public ArchiveSource getArchiveFile(String id, HttpServletResponse response) {
 
@@ -76,26 +75,16 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
         }
         if (fileName.startsWith("/fire")) fileName = fileName.substring(16);
         // Guess Encryption Format from File
-        String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";
-        String keyKey = encryptionFormat.toLowerCase().equals("symmetricgpg") ? "GPG" : "AES";
-        // Get Cleversafe URL from Filename via Fire
-        String[] filePath = archiveAdapterService.getPath(fileName);
-        if (filePath == null || filePath[0] == null) {
-            response.setStatus(530);
-            throw new ServerErrorException("Fire Error in obtaining URL for ", fileName);
-        }
-        String fileUrlString = filePath[0];
-        long size = Long.valueOf(filePath[1]);
-
+        String encryptionFormat = fileName.toLowerCase().endsWith("gpg") ? "symmetricgpg" : "aes256";        
         // Get EgaFile encryption Key
-        String encryptionKey = keyService.getFileKey(keyKey);
+        String encryptionKey = keyService.getFileKey(id);
         if (encryptionKey == null || encryptionKey.length() == 0) {
             response.setStatus(532);
             throw new ServerErrorException("Error in obtaining Archive Key for ", fileName);
         }
 
         // Build result object and return it (auth is 'null' --> it is part of the URL now)
-        return new ArchiveSource(fileUrlString, size, null, encryptionFormat, encryptionKey);
+        return new ArchiveSource(body[0].getFileName(),  body[0].getFileSize(), null, encryptionFormat, encryptionKey);
     }
 
     // Downstream Helper Function - List supported ReEncryption Formats
