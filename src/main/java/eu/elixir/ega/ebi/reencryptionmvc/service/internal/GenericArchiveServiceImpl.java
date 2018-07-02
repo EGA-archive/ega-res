@@ -51,14 +51,12 @@ public class GenericArchiveServiceImpl implements ArchiveService {
     private KeyService keyService;
 
     @Override
-//    @HystrixCommand
     @Retryable(maxAttempts = 8, backoff = @Backoff(delay = 2000, multiplier = 2))
     public ArchiveSource getArchiveFile(String id, HttpServletResponse response) {
 
         // Get Filename from EgaFile ID - via DATA service (potentially multiple files)
         ResponseEntity<EgaFile[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", EgaFile[].class, id);
         int statusCodeValue = forEntity.getStatusCodeValue();
-//System.out.println("getArchiveFile " + id + ": " + statusCodeValue + "\t(" + forEntity.getBody()==null + ")");        
         EgaFile[] body = forEntity.getBody();
         if ((body == null || body.length == 0)) {
             throw new NotFoundException("Can't obtain File data for ID", id);
@@ -80,7 +78,6 @@ public class GenericArchiveServiceImpl implements ArchiveService {
     }
 
     // Downstream Helper Function - List supported ReEncryption Formats
-//    @HystrixCommand
     public String[] getEncryptionFormats() {
         return keyService.getFormats();
     }

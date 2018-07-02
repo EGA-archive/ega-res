@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * Implementation for S3 Interface at the EGA-EBI
+ * 
+ * Load archive data as Cache Pages, keep unencrypted data in cache memory
+ * Serve data requests from cache only
+ */
 package eu.elixir.ega.ebi.reencryptionmvc.service.internal;
 
 import static com.amazonaws.HttpMethod.GET;
@@ -97,12 +104,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.google.common.io.ByteStreams;
-//import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import eu.elixir.ega.ebi.reencryptionmvc.config.GeneralStreamingException;
-import eu.elixir.ega.ebi.reencryptionmvc.config.ObjectLoaderAES;
-import eu.elixir.ega.ebi.reencryptionmvc.config.ObjectLoaderGPG;
-import eu.elixir.ega.ebi.reencryptionmvc.config.ObjectLoaderPlain;
 import eu.elixir.ega.ebi.reencryptionmvc.config.ServerErrorException;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
@@ -133,9 +136,6 @@ public class CacheResServiceImpl implements ResService {
 
     @Autowired
     private KeyService keyService;
-
-    //@Autowired
-    //private TransferRepository transferRepository;
 
     @Autowired
     private MyAwsConfig myAwsConfig;
@@ -196,14 +196,6 @@ public class CacheResServiceImpl implements ResService {
         DigestOutputStream encryptedDigestOut = null;
         OutputStream eOut = null;
 
-        // Build Header - Specify UUID (Allow later stats query regarding this transfer)
-        //UUID dlIdentifier = UUID.randomUUID();
-        //String headerValue = dlIdentifier.toString();
-
-        // Set headers for the response
-        //String headerKey = "X-Session";
-        //response.setHeader(headerKey, headerValue);
-
         // get MIME type of the file (actually, it's always this for now)
         String mimeType = "application/octet-stream";
 
@@ -235,7 +227,7 @@ public class CacheResServiceImpl implements ResService {
             }
             if (endCoordinate > fileSize)
                 endCoordinate = fileSize;
-            // Adjust start coordinate requested - to match 16 bute block structure
+            // Adjust start coordinate requested - to match 16 byte block structure
             if (destintionFormat.toLowerCase().startsWith("aes") && 
                     destinationIV!= null && destinationIV.length() > 0) {
                 long blockStart = (startCoordinate / 16) * 16;
@@ -254,17 +246,6 @@ public class CacheResServiceImpl implements ResService {
             String key = id + "_" + cachePage;
 
             while (bytesTransferred < bytesToTransfer) {
-/*
-                // Call Cache Loader, wrap Page into byte stream - Handle 3 cases: AES, GPG, Plain
-                if (sourceFormat.equalsIgnoreCase("aes128") || sourceFormat.equalsIgnoreCase("aes256")) {
-                    loadCacheAES(cachePage, cacheEndPage, fileSize, httpAuth, id, sourceFormat, sourceKey); // Background, load pages
-                } else if (sourceFormat.equalsIgnoreCase("symmetricgpg")) {
-                    loadCacheGPG(cachePage, cacheEndPage, fileSize, sIn, id); // Background, load pages
-                } else {
-                    loadCachePlain(cachePage, cacheEndPage, fileSize, httpAuth, id); // Background, load pages
-                }
-                while (!myPageCache.containsKey(key)) {Thread.sleep(5);} // Wait until Page has been loaded
-*/
                 // New: Cache Loader takes care of loading autonomously, based on Key
                 key = id + "_" + cachePage;
                 byte[] get = myPageCache.get(key).getPage(); // Get Cache page that contains requested data
@@ -322,16 +303,6 @@ public class CacheResServiceImpl implements ResService {
                     encryptedHashtext = "0" + encryptedHashtext;
                 }
 
-                // Store with UUID for later retrieval
-                //Transfer transfer = new Transfer(headerValue,
-                //                                 new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()),
-                //                                 plainHashtext,
-                //                                 encryptedHashtext,
-                //                                 0,
-                //                                 bytes,
-                //                                 "RES");
-                //Transfer save = transferRepository.save(transfer);
-
             } catch (Exception ex) {
                 throw new GeneralStreamingException(ex.toString(), 5);
             }
@@ -386,7 +357,6 @@ public class CacheResServiceImpl implements ResService {
     // Return ReEncrypted Output Stream for Target
     // This function also takes a specified IV as parameter, to produce a target 
     // "random access" encrypting output stream, properly initialised 
-//    @HystrixCommand
     private OutputStream getTarget(OutputStream outStream,
                                    String destinationFormat,
                                    String destinationKey,
@@ -440,8 +410,6 @@ public class CacheResServiceImpl implements ResService {
     /*
      * Archive Related Helper Functions -- GPG
      */
-
-    //    @HystrixCommand
     private SeekableStream getSymmetricGPGDecryptingInputStream(InputStream c_in, String sourceKey) {
         Security.addProvider(new BouncyCastleProvider());
         InputStream in = c_in;
@@ -464,7 +432,6 @@ public class CacheResServiceImpl implements ResService {
         return new FakeSeekableStream(in);
     }
 
-    //    @HystrixCommand
     private SeekableStream getAsymmetricGPGDecryptingInputStream(InputStream c_in, String sourceKey, String sourceFormat) {
         Security.addProvider(new BouncyCastleProvider());
         InputStream in = null;
@@ -552,7 +519,6 @@ public class CacheResServiceImpl implements ResService {
 
     // *************************************************************************
     // ** Get Public Key fo Encryption
-//    @HystrixCommand
     public PGPPublicKey getPublicGPGKey(String destinationFormat) throws IOException {
         PGPPublicKey pgKey = null;
         Security.addProvider(new BouncyCastleProvider());
@@ -586,7 +552,6 @@ public class CacheResServiceImpl implements ResService {
     }
 
     // Getting a public GPG key from a keyring
-//    @HystrixCommand
     private PGPPublicKey readPublicKey(InputStream in)
             throws IOException, PGPException {
         in = PGPUtil.getDecoderStream(in);
@@ -625,7 +590,6 @@ public class CacheResServiceImpl implements ResService {
         return key;
     }
 
-    //    @HystrixCommand
     private static PGPPublicKeyRing getKeyring(InputStream keyBlockStream) throws IOException {
         // PGPUtil.getDecoderStream() will detect ASCII-armor automatically and decode it,
         // the PGPObject factory then knows how to read all the data in the encoded stream
@@ -641,7 +605,6 @@ public class CacheResServiceImpl implements ResService {
     }
 
     // -------------------------------------------------------------------------
-//    @HystrixCommand
     private static PGPPublicKey getEncryptionKey(PGPPublicKeyRing keyRing) {
         if (keyRing == null)
             return null;
@@ -659,108 +622,6 @@ public class CacheResServiceImpl implements ResService {
         return null;
     }
 
-    // *************************************************************************
-    private void loadCacheAES(int cachePage, int cacheEndPage, long fileSize,
-                              String httpAuth, String id, String sourceFormat, String sourceKey) {
-
-        EgaAESFileHeader header = myHeaderCache.get(id);
-
-        // Number of Cache pages to load at any given time
-        int delta = cacheEndPage - cachePage;
-        delta = delta > MAX_CONCURRENT ? MAX_CONCURRENT : delta;
-        int pageCounter = 0;
-
-        do {
-            // Load data from CleverSafe 
-            long startCoordinate = (long) cachePage * BUFFER_SIZE; // Account for IV at start of File
-            long endCoordinate = (long) startCoordinate + BUFFER_SIZE;
-            endCoordinate = endCoordinate > fileSize ? fileSize : endCoordinate;
-            int bufSize = (int) (endCoordinate - startCoordinate);
-
-            String key = id + "_" + cachePage;
-//            if (!ledge.containsKey(key)) {
-//                ledge.put(key, key);
-            ObjectLoaderAES x = new ObjectLoaderAES(header.getUrl(), httpAuth, (int) BUFFER_SIZE,
-                    myPageCache,
-                    id, startCoordinate, endCoordinate,
-                    myAwsConfig, keyService,
-                    header, sourceFormat, sourceKey,
-                    null);
-
-            executorService2.submit(x);
-//            }
-
-            pageCounter++;
-            cachePage++;
-        } while (pageCounter < delta);
-
-    }
-
-    private void loadCacheGPG(int cachePage, int cacheEndPage, long fileSize,
-                              SeekableStream sIn, String id) throws Exception {
-
-        // Number of Cache pages to load at any given time
-        int delta = cacheEndPage - cachePage;
-        //delta = delta>MAX_CONCURRENT?MAX_CONCURRENT:delta;
-        int pageCounter = 0;
-
-        delta = 1;
-        do {
-
-            // Load data from CleverSafe 
-            long startCoordinate = cachePage * BUFFER_SIZE; // Account for IV at start of File
-            long endCoordinate = startCoordinate + BUFFER_SIZE;
-            endCoordinate = endCoordinate > fileSize ? fileSize : endCoordinate;
-            int bufSize = (int) (endCoordinate - startCoordinate);
-
-            ObjectLoaderGPG x = new ObjectLoaderGPG(sIn, (int) BUFFER_SIZE,
-                    myPageCache,
-                    id, startCoordinate, endCoordinate,
-                    myAwsConfig, keyService, fileSize);
-
-            //executorService2.submit(x);
-            x.run(); // Forget parallelism... run in sequence
-
-            pageCounter++;
-            cachePage++;
-        } while (pageCounter < delta);
-
-    }
-
-    private void loadCachePlain(int cachePage, int cacheEndPage, long fileSize,
-                                String httpAuth, String id) throws Exception {
-
-        EgaAESFileHeader header = myHeaderCache.get(id);
-
-        // Number of Cache pages to load at any given time
-        int delta = cacheEndPage - cachePage;
-        delta = delta > MAX_CONCURRENT ? MAX_CONCURRENT : delta;
-        int pageCounter = 0;
-
-        do {
-
-            // Load data from CleverSafe 
-            long startCoordinate = cachePage * BUFFER_SIZE; // Account for IV at start of File
-            long endCoordinate = startCoordinate + BUFFER_SIZE;
-            endCoordinate = endCoordinate > fileSize ? fileSize : endCoordinate;
-            int bufSize = (int) (endCoordinate - startCoordinate);
-
-            ObjectLoaderPlain x = new ObjectLoaderPlain(header.getUrl(), httpAuth, (int) BUFFER_SIZE,
-                    myPageCache,
-                    id, startCoordinate, endCoordinate,
-                    myAwsConfig, keyService,
-                    header);
-
-            executorService2.submit(x);
-
-            pageCounter++;
-            cachePage++;
-        } while (pageCounter < delta);
-
-    }
-
-    // *************************************************************************
-
     private void loadHeaderCleversafe(String id, String url, String httpAuth,
                                       long fileSize, HttpServletResponse response_, String sourceKey) {
         boolean close = false;
@@ -774,9 +635,6 @@ public class CacheResServiceImpl implements ResService {
         HttpGet request = new HttpGet(url);
 
         if (httpAuth != null && httpAuth.length() > 0) { // Old: http Auth
-//            close = true;
-            //String encoding = new sun.misc.BASE64Encoder().encode(httpAuth.getBytes());
-            //encoding = encoding.replaceAll("\n", "");
             String encoding = java.util.Base64.getEncoder().encodeToString(httpAuth.getBytes());
             String auth = "Basic " + encoding;
             request.addHeader("Authorization", auth);
