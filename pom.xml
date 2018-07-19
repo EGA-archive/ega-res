@@ -50,10 +50,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
@@ -80,11 +76,6 @@
             </exclusions>
         </dependency>
         <!-- exclude tomcat-jdbc, Spring Boot will use HikariCP automatically  -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>2.7.9</version>
-        </dependency>
 
         <!-- EGA-archive -->
         <dependency>
@@ -99,11 +90,6 @@
             <artifactId>lombok</artifactId>
             <version>1.16.10</version>
             <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.4.195</version>
         </dependency>
         <dependency>
             <groupId>io.springfox</groupId>

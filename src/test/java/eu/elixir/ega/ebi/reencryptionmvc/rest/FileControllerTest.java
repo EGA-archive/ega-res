@@ -147,22 +147,6 @@ public class FileControllerTest {
     }
 
     /**
-     * Test {@link FileController#getAvailableFormats()}. Verify the api call
-     * returns status is OK.
-     * 
-     * @throws Exception
-     */
-    @Test
-    public void testGetAvailableFormats() throws Exception {
-        String encryptionFormats[] = { "AES", "GPG" };
-        when(archiveService.getEncryptionFormats()).thenReturn(encryptionFormats);
-
-        final MockHttpServletResponse response = mockMvc
-                .perform(get("/file/availableformats").session(new MockHttpSession())).andReturn().getResponse();
-        assertThat(response.getStatus(), equalTo(OK.value()));
-    }
-
-    /**
      * Common mock method.
      */
     private void commonMockMethod() {

@@ -109,6 +109,7 @@ import eu.elixir.ega.ebi.reencryptionmvc.config.GeneralStreamingException;
 import eu.elixir.ega.ebi.reencryptionmvc.config.ServerErrorException;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.CachePage;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.EgaAESFileHeader;
+import eu.elixir.ega.ebi.reencryptionmvc.dto.KeyPath;
 import eu.elixir.ega.ebi.reencryptionmvc.dto.MyAwsConfig;
 import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 import eu.elixir.ega.ebi.reencryptionmvc.service.ResService;
@@ -202,6 +203,7 @@ public class CacheResServiceImpl implements ResService {
         // set content attributes for the response
         response.setContentType(mimeType);
 
+        int errorLocation = 0;
         try {
             // Get Send Stream - http Response, wrap in Digest Stream
             outStream = response.getOutputStream();
@@ -214,6 +216,7 @@ public class CacheResServiceImpl implements ResService {
                     destinationKey,
                     destinationIV,
                     startCoordinate);
+            errorLocation = 1;
             if (eOut == null) {
                 throw new GeneralStreamingException("Output Stream (ReEncryption Stage) Null", 2);
             }
@@ -236,6 +239,7 @@ public class CacheResServiceImpl implements ResService {
             }
             long bytesToTransfer = fileSize - startCoordinate - (endCoordinate > 0 ? (fileSize - endCoordinate) : 0);
             long bytesTransferred = 0;
+            errorLocation = 2;
 
             int cacheStartPage = (int) (startCoordinate / BUFFER_SIZE);
             int cacheEndPage = (int) ((endCoordinate > 0 ? endCoordinate : fileSize) / BUFFER_SIZE);
@@ -246,9 +250,12 @@ public class CacheResServiceImpl implements ResService {
             String key = id + "_" + cachePage;
 
             while (bytesTransferred < bytesToTransfer) {
+                errorLocation = 3;
+                
                 // New: Cache Loader takes care of loading autonomously, based on Key
                 key = id + "_" + cachePage;
                 byte[] get = myPageCache.get(key).getPage(); // Get Cache page that contains requested data
+                errorLocation = 4;
                 if (get == null)
                     throw new GeneralStreamingException("Error getting Cache Page " + key + " at Stage ", 8);
                 // Prefetch Loop (prefetch next few pages in background)
@@ -268,6 +275,7 @@ public class CacheResServiceImpl implements ResService {
                         }
                     }
                 }
+                errorLocation = 5;
 
                 ByteArrayInputStream bais = new ByteArrayInputStream(get); // Wrap byte array
                 bais.skip(cachePageOffset); // first cache page
@@ -284,11 +292,12 @@ public class CacheResServiceImpl implements ResService {
 
                 // Copy the specified contents - decrypting through input, encrypting through output
                 long bytes = ByteStreams.copy(in, eOut);
+                errorLocation = 6;
                 bytesTransferred += bytes;
                 cachePage += 1;
             }
         } catch (Exception ex) {
-            throw new GeneralStreamingException(ex.toString(), 10);
+            throw new GeneralStreamingException("Error Location: " + errorLocation + "\n" + ex.toString(), 10);
         } finally {
             try {
                 // Close all Streams in reverse order (theoretically only the first should be necessary)
@@ -417,8 +426,8 @@ public class CacheResServiceImpl implements ResService {
         try {
             // Load key, if not provided. Details in config XML file
             if (sourceKey == null || sourceKey.length() == 0) {
-                String[] keyPath = keyService.getKeyPath("SymmetricGPG");
-                BufferedReader br = new BufferedReader(new FileReader(keyPath[0]));
+                KeyPath keyPath = keyService.getKeyPath("SymmetricGPG");
+                BufferedReader br = new BufferedReader(new FileReader(keyPath.getKeyPath()));
                 sourceKey = br.readLine();
                 br.close();
             }
@@ -437,18 +446,15 @@ public class CacheResServiceImpl implements ResService {
         InputStream in = null;
 
         try {
-            String[] keyPath = sourceFormat.equalsIgnoreCase("publicgpg_sanger") ?
+            KeyPath keyPath = sourceFormat.equalsIgnoreCase("publicgpg_sanger") ?
                     keyService.getKeyPath("PrivateGPG_Sanger") :
                     keyService.getKeyPath("PrivateGPG");
 
-            String key = keyPath[2]; // password for key file, not password itself
-            if (key == null || key.length() == 0) {
-                BufferedReader br = new BufferedReader(new FileReader(keyPath[1]));
-                key = br.readLine();
-                br.close();
-            }
+            BufferedReader br = new BufferedReader(new FileReader(keyPath.getKeyPassPath()));
+            String key = br.readLine();
+            br.close();
 
-            InputStream keyIn = new BufferedInputStream(new FileInputStream(keyPath[0]));
+            InputStream keyIn = new BufferedInputStream(new FileInputStream(keyPath.getKeyPath()));
 
             PGPObjectFactory pgpF = new PGPObjectFactory(c_in, fingerPrintCalculater);
             PGPEncryptedDataList enc;
@@ -524,11 +530,11 @@ public class CacheResServiceImpl implements ResService {
         Security.addProvider(new BouncyCastleProvider());
 
         // Paths (file containing the key - no paswords for public GPG Keys)
-        String[] vals = keyService.getKeyPath(destinationFormat);
+        KeyPath vals = keyService.getKeyPath(destinationFormat);
         if (vals == null) {
             throw new GeneralStreamingException("Can't Read Destination Key: " + destinationFormat, 10);
         }
-        String path = vals[0];
+        String path = vals.getKeyPath();
         InputStream in = new FileInputStream(path);
 
         // Two types of public GPG key files - pick the correct one! (through trial-and-error)

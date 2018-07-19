@@ -23,7 +23,6 @@ import htsjdk.samtools.seekablestream.RandomInputStream;
 import htsjdk.samtools.seekablestream.ebi.BufferedBackgroundInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletContext;
@@ -133,12 +132,6 @@ public class FileController {
 
         // Return File Size
         return source.getSize();
-    }
-
-    @GetMapping(value = "/availableformats")
-    @ResponseBody
-    public String[] getAvailableFormats() {
-        return archiveService.getEncryptionFormats();
     }
 
     // *************************************************************************

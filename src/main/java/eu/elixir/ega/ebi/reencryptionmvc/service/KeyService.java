@@ -15,6 +15,7 @@
  */
 package eu.elixir.ega.ebi.reencryptionmvc.service;
 
+import eu.elixir.ega.ebi.reencryptionmvc.dto.KeyPath;
 import java.io.IOException;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.openpgp.PGPException;
@@ -29,9 +30,7 @@ public interface KeyService {
 
     String getFileKey(String fileId);
 
-    String[] getFormats();
-
-    String[] getKeyPath(String key);
+    KeyPath getKeyPath(String key);
 
     byte[] getRSAKeyById(String keyId) throws IOException, DecoderException;
     

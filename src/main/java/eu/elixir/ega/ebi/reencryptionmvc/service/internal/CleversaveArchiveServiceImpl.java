@@ -24,8 +24,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -46,7 +44,6 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 @EnableDiscoveryClient
 public class CleversaveArchiveServiceImpl implements ArchiveService {
 
-    //private final String SERVICE_URL = "http://DATA";
     private final String SERVICE_URL = "http://DOWNLOADER";
 
     @Autowired
@@ -96,12 +93,6 @@ public class CleversaveArchiveServiceImpl implements ArchiveService {
 
         // Build result object and return it (auth is 'null' --> it is part of the URL now)
         return new ArchiveSource(fileUrlString, size, null, encryptionFormat, encryptionKey);
-    }
-
-    // Downstream Helper Function - List supported ReEncryption Formats
-    @Override
-    public String[] getEncryptionFormats() {
-        return keyService.getFormats();
     }
 
 }

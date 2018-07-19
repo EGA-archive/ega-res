@@ -77,9 +77,4 @@ public class GenericArchiveServiceImpl implements ArchiveService {
         return new ArchiveSource(fileUrlString, size, "", encryptionFormat, encryptionKey);
     }
 
-    // Downstream Helper Function - List supported ReEncryption Formats
-    public String[] getEncryptionFormats() {
-        return keyService.getFormats();
-    }
-
 }

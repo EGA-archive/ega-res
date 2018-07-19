@@ -125,8 +125,6 @@ public class CacheResServiceImplTest {
         when(mockCloseableHttpClient.execute(any())).thenReturn(mockHttpResponse);
         when(mockHttpResponse.getEntity()).thenReturn(mockHttpEntity);
         when(mockHttpEntity.getContent()).thenReturn(new ByteArrayInputStream(inputData.getBytes()));
-        when(keyService.getKeyPath(any(String.class))).thenReturn(keyPaths);
-        when(keyService.getKeyPath(any(String.class))).thenReturn(keyPaths);
         when(myAwsConfig.getAwsAccessKeyId()).thenReturn("accessKeyId");
         when(myAwsConfig.getAwsSecretAccessKey()).thenReturn("secretAccesskey");
         when(myHeaderCache.containsKey(any())).thenReturn(Boolean.FALSE);

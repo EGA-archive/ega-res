@@ -288,17 +288,29 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
         byte[] decrypted = new byte[(int) pageSize_];
         long bytesRead = 0;
         try {
-            // Run the request
-            HttpResponse response = localHttpclient.execute(request);
-            if (response.getStatusLine().getStatusCode() != 200 && response.getStatusLine().getStatusCode() != 206)
-                throw new ServerErrorException("Error Loading Cache Page Code " + response.getStatusLine().getStatusCode() + " for ", key);
+            
+            // Attemp loading page 3 times (mask object store read errors)
+            int pageCnt = 0;
+            boolean pageSuccess = false;
+            do {
+                try {
+                    // Run the request
+                    HttpResponse response = localHttpclient.execute(request);
+                    if (response.getStatusLine().getStatusCode() != 200 && response.getStatusLine().getStatusCode() != 206)
+                        throw new ServerErrorException("Error Loading Cache Page Code " + response.getStatusLine().getStatusCode() + " for ", key);
 
-            // Read response from HTTP call, count bytes read (encrypted Data)
-            CountingInputStream cIn = new CountingInputStream(response.getEntity().getContent());
-            DataInputStream dis = new DataInputStream(cIn);
-            dis.readFully(buffer);
-            bytesRead = (int) cIn.getCount(); // Cache Page will be in Integer range
-
+                    // Read response from HTTP call, count bytes read (encrypted Data)
+                    CountingInputStream cIn = new CountingInputStream(response.getEntity().getContent());
+                    DataInputStream dis = new DataInputStream(cIn);
+                    dis.readFully(buffer);
+                    bytesRead = (int) cIn.getCount(); // Cache Page will be in Integer range
+                    pageSuccess = true;
+                } catch (Throwable th) {
+                    pageSuccess = false;
+                    System.out.println("Error page " + key + " attempt " + pageCnt + ": " + th.toString());
+                }
+            } while (!pageSuccess && pageCnt++ < 3);
+            
             // Decrypt, store plain in cache
             byte[] newIV = new byte[16]; // IV always 16 bytes long
             System.arraycopy(header.getIV(), 0, newIV, 0, 16); // preserved start value

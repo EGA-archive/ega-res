@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 ELIXIR EGA
+ * Copyright 2018 ELIXIR EGA
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.elixir.ega.ebi.reencryptionmvc.service;
+package eu.elixir.ega.ebi.reencryptionmvc.dto;
 
-import eu.elixir.ega.ebi.reencryptionmvc.dto.ArchiveSource;
-import org.springframework.cache.annotation.Cacheable;
-
-import javax.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author asenf
  */
-@Cacheable
-public interface ArchiveService {
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
+public class KeyPath {
 
-    ArchiveSource getArchiveFile(String id, HttpServletResponse response);
+    private String keyPath;
+    private String keyPassPath;
 
 }
