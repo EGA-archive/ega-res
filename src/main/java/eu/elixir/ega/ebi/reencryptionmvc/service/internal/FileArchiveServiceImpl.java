@@ -87,10 +87,4 @@ public class FileArchiveServiceImpl implements ArchiveService {
         return new ArchiveSource(body[0].getFileName(),  body[0].getFileSize(), null, encryptionFormat, encryptionKey);
     }
 
-    // Downstream Helper Function - List supported ReEncryption Formats
-    @Override
-    public String[] getEncryptionFormats() {
-        return keyService.getFormats();
-    }
-
 }
