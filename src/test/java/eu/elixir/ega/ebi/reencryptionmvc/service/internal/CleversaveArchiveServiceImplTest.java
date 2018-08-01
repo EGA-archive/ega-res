@@ -50,8 +50,8 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 @PrepareForTest(CleversaveArchiveServiceImpl.class)
 public class CleversaveArchiveServiceImplTest {
 
-    //private final String SERVICE_URL = "http://DATA";
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    //private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
 
     @InjectMocks
     private CleversaveArchiveServiceImpl cleversaveArchiveServiceImpl;

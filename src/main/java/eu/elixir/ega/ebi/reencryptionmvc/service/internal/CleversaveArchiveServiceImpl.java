@@ -44,7 +44,8 @@ import eu.elixir.ega.ebi.reencryptionmvc.service.KeyService;
 @EnableDiscoveryClient
 public class CleversaveArchiveServiceImpl implements ArchiveService {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    //private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
 
     @Autowired
     RestTemplate restTemplate;

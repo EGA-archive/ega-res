@@ -133,7 +133,8 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
         keyUrls = new ArrayList<>();
 
         // Manually Obtain URL for DOWNLOADER
-        HttpGet request = new HttpGet(eurekaUrl + "apps/DOWNLOADER");
+        //HttpGet request = new HttpGet(eurekaUrl + "apps/DOWNLOADER");
+        HttpGet request = new HttpGet(eurekaUrl + "apps/FILEDATABASE");
         HttpResponse response = this.httpclient.execute(request);
         BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
         String str;
@@ -147,7 +148,7 @@ public class My2KCachePageFactory implements FactoryBean<Cache<String, CachePage
         reader.close();
 
         // Manually Obtain URL for KEY
-        request = new HttpGet(eurekaUrl + "apps/KEYSERVICE");
+        request = new HttpGet(eurekaUrl + "apps/KEYSERVER");
         response = this.httpclient.execute(request);
         reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
         while ((str = reader.readLine()) != null) {
